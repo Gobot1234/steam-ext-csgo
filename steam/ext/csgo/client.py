@@ -2,28 +2,39 @@
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, overload, Union, Literal
 
-import vdf
-from multidict import MultiDict
+from steam.ext import commands
 from typing_extensions import Final
+from steam import CSGO, Client, Game, ClientUser, Inventory
 
-from steam import CSGO, Client, Game
-
-from .enums import Language
+from .backpack import BackPack
 from .state import GCState
 
-__all__ = ("Client",)
+__all__ = (
+    "Client",
+    "Bot",
+)
+
+
+class CSGOClientUser(ClientUser):
+    @overload
+    async def inventory(self, game: Literal[CSGO]) -> BackPack:
+        ...
+
+    @overload
+    async def inventory(self, game: Game) -> Inventory:
+        ...
+
+    async def inventory(self, game: Game) -> Union[Inventory, BackPack]:
+        return await super().inventory(game)
 
 
 class Client(Client):
-    VDF_DECODER: Callable[[str], MultiDict] = vdf.loads  #: The default VDF decoder to use
-    VDF_ENCODER: Callable[[str], MultiDict] = vdf.dumps  #: The default VDF encoder to use
     GAME: Final[Game] = CSGO
+    user: Optional[CSGOClientUser]
 
-    def __init__(self, loop: Optional[asyncio.AbstractEventLoop] = None, **options: Any):
+    def __init__(self, **options: Any):
         game = options.pop("game", None)
         if game is not None:  # don't let them overwrite the main game
             try:
@@ -31,23 +42,16 @@ class Client(Client):
             except (TypeError, KeyError):
                 options["games"] = [game]
         options["game"] = self.GAME
-        self._original_games: list[Game] = options.get("games")
-        super().__init__(loop, **options)
-        self._connection = GCState(client=self, http=self.http, **options)
-
-    def set_language(self, file: Union[Path, str]) -> None:
-        """Set the localization files for your bot.
-
-        This isn't necessary in most situations.
-        """
-        file = Path(file).resolve()
-        self._connection.language = self.VDF_DECODER(file.read_text())
+        self._original_games: Optional[list[Game]] = options.get("games")
+        super().__init__(**options)
+        self._connection = GCState(client=self, **options)
 
     # boring subclass stuff
 
-    async def close(self) -> None:
-        try:
-            if self.ws:
-                await self.change_presence(game=Game(id=0))  # disconnect from games
-        finally:
-            await super().close()
+    def _handle_ready(self) -> None:
+        self._connection._unpatched_inventory = self.user.inventory
+        super()._handle_ready()
+
+
+class Bot(commands.Bot, Client):
+    ...
