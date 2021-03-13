@@ -1,1 +1,4 @@
-from .client import Client, Bot
+# -*- coding: utf-8 -*-
+
+
+from .client import *
