@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
-
 from __future__ import annotations
 
 import inspect
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
-from steam import Item, Inventory
 from steam.enums import _is_descriptor
+
+from steam import Inventory, Item
 
 from .models import Sticker
 from .protobufs.base_gcmessages import CsoEconItem

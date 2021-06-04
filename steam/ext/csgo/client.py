@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, overload, Union, Literal
+from typing import Any, Literal, Optional, Union, overload
 
-from steam.ext import commands
 from typing_extensions import Final
-from steam import CSGO, Client, Game, ClientUser, Inventory
+
+from steam import CSGO, Client, ClientUser, Game, Inventory
+from steam.ext import commands
 
 from .backpack import BackPack
 from .state import GCState
@@ -17,22 +18,8 @@ __all__ = (
 )
 
 
-class CSGOClientUser(ClientUser):
-    @overload
-    async def inventory(self, game: Literal[CSGO]) -> BackPack:
-        ...
-
-    @overload
-    async def inventory(self, game: Game) -> Inventory:
-        ...
-
-    async def inventory(self, game: Game) -> Union[Inventory, BackPack]:
-        return await super().inventory(game)
-
-
 class Client(Client):
     GAME: Final[Game] = CSGO
-    user: Optional[CSGOClientUser]
 
     def __init__(self, **options: Any):
         game = options.pop("game", None)
@@ -51,6 +38,11 @@ class Client(Client):
     def _handle_ready(self) -> None:
         self._connection._unpatched_inventory = self.user.inventory
         super()._handle_ready()
+
+    @property
+    def user(self):
+        old_user = super().user()
+        return CSGOClientUser(old_user) if old_user is not None else None
 
 
 class Bot(commands.Bot, Client):

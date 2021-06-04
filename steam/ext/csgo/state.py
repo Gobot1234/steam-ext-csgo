@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from __future__ import annotations
 
 import asyncio
@@ -7,23 +5,22 @@ import logging
 import math
 import struct
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional, Callable, Coroutine
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional
 
 from steam.models import EventParser, register
 from steam.protobufs import EMsg, GCMsg, GCMsgProto, MsgProto
 from steam.state import ConnectionState
 
-from steam import utils, Inventory, Game, CSGO
+from steam import CSGO, Game, Inventory, utils
 
-from .enums import Language
 from .backpack import BackPack
-from .models import Sticker, AccountInfo
+from .enums import Language
+from .models import AccountInfo, Sticker
 from .protobufs import (
     base_gcmessages as cso_messages,
-    gcsdk_gcmessages as so_messages,
     cstrike15_gcmessages as cstrike,
     econ_gcmessages,
-    UpdateMultipleItems,
+    gcsdk_gcmessages as so_messages,
 )
 
 if TYPE_CHECKING:
@@ -70,13 +67,8 @@ class GCState(ConnectionState):
             if log.isEnabledFor(logging.DEBUG):
                 log.debug(f"Socket has received GC message {msg!r} from the websocket.")
 
-        try:
-            func = self.gc_parsers[language]
-        except KeyError:
-            if log.isEnabledFor(logging.DEBUG):
-                log.debug(f"Ignoring event {msg!r}")
-        else:
-            await utils.maybe_coroutine(func, msg)
+        self.dispatch("gc_message_receive", msg)
+        self.run_parser(language, msg)
 
     @register(Language.ClientWelcome)
     def parse_gc_client_connect(self, _) -> None:
@@ -259,13 +251,6 @@ class GCState(ConnectionState):
 
     @register(Language.SOUpdateMultiple)
     def handle_so_update_multiple(self, msg: GCMsgProto[so_messages.CMsgSoMultipleObjects]):
-        try:
-            type_id = msg.body.objects[0].type_id
-        except IndexError:
-            pass  # would be weird
-        else:
-            if type_id == 1:
-                msg.body = UpdateMultipleItems().parse(msg.payload)  # TODO is this correct?
         for item in msg.body.objects:
             if item.type_id == 1:
                 old_item = utils.find(lambda i: i.asset_id == int(item.inner.id), self.backpack)
