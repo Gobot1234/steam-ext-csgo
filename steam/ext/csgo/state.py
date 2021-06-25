@@ -32,10 +32,8 @@ log = logging.getLogger(__name__)
 
 
 class GCState(ConnectionState):
-    gc_parsers: dict[Language, EventParser[Language]] = {}
+    gc_parsers: dict[Language, EventParser]
     client: Client
-
-    __slots__ = ("_connected", "_unpatched_inventory", "backpack")
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
