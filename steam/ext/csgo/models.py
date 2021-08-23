@@ -1,33 +1,31 @@
 from __future__ import annotations
 
-import inspect
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional, Union, overload
+from typing import TYPE_CHECKING, overload
 
-from steam.enums import _is_descriptor
 from typing_extensions import Literal
 
-import steam
-from steam import CSGO, ClientUser, Game, Inventory
-
-from .backpack import BackPack
+from ... import utils
+from ...game import CSGO, Game
+from ...trade import Inventory
+from ...user import ClientUser
 from .protobufs import cstrike15_gcmessages as cstrike
 from .protobufs.cstrike15_gcmessages import CEconItemPreviewDataBlockSticker as ProtoSticker
 
+if TYPE_CHECKING:
+    from .backpack import BackPack
 
+
+@dataclass
 class Sticker:
     __slots__ = tuple(ProtoSticker.__annotations__)
 
-    def __init__(self, **kwargs: Any):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
     slot: Literal[1, 2, 3, 4, 5]  # TODO: enum these
     sticker_id: int
-    wear: Optional[float] = None
-    scale: Optional[float] = None
-    rotation: Optional[float] = None
+    wear: float | None
+    scale: float | None
+    rotation: float | None
 
     @classmethod
     def get_attrs(cls):
@@ -39,12 +37,11 @@ class Sticker:
 
 if TYPE_CHECKING:
 
-    @dataclass
     class Sticker(Sticker, ProtoSticker):
         ...
 
 
-class CSGOClientUser(steam.ClientUser):
+class CSGOClientUser(ClientUser):
     def __init__(self, client_user: ClientUser, msg: cstrike.CMsgGccStrike15V2MatchmakingGc2ClientHello):  # noqa
         self.in_match = msg.ongoingmatch
         self.global_stats = msg.global_stats
@@ -60,21 +57,16 @@ class CSGOClientUser(steam.ClientUser):
         self.current_event_stages = msg.my_current_event_stages
         self.survey_vote = msg.survey_vote
         self.activity = msg.activity
+        self.player_level = msg.player_level
         self.current_xp = msg.player_cur_xp
-        self._current_xp = msg.player_cur_xp
         self.xp_bonus_flags = msg.player_xp_bonus_flags
         self.rankings = msg.rankings
 
-        for name, attr in inspect.getmembers(client_user, predicate=lambda attr: not _is_descriptor(attr)):
-            if not (name.startswith("__") and name.endswith("__")):
-                try:
-                    setattr(self, name, attr)
-                except (AttributeError, TypeError):
-                    pass
+        utils.update_class(client_user, self)
 
     @property
-    def level(self) -> int:
-        """:class:`int`: The user's current level."""
+    def percentage_of_current_level(self) -> int:
+        """The user's current level."""
         return math.floor((self.current_xp - 327680000) / 5000)
 
     @overload
@@ -85,7 +77,7 @@ class CSGOClientUser(steam.ClientUser):
     async def inventory(self, game: Game) -> Inventory:
         ...
 
-    async def inventory(self, game: Game) -> Union[Inventory, BackPack]:
+    async def inventory(self, game: Game) -> Inventory | BackPack:
         return await super().inventory(game)
 
 
@@ -106,6 +98,6 @@ class AccountInfo:
         self.survey_vote = msg.survey_vote
         self.activity = msg.activity
         self.current_xp = msg.player_cur_xp
-        self._current_xp = msg.player_cur_xp
+        self.player_level = msg.player_level
         self.xp_bonus_flags = msg.player_xp_bonus_flags
         self.rankings = msg.rankings

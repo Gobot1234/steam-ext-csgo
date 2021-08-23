@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "steam-ext-csgo"
-version = "1.0.0"
+version = "1.0.0a"
 description = "An extension for steam.py to interact with the Counter Strike-Global Offensive Game Coordinator"
 authors = ["Gobot1234"]
 license = "MIT"
@@ -12,10 +12,6 @@ classifiers=[
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",

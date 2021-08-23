@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import inspect
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING
 
-from steam.enums import _is_descriptor
-
-from steam import Inventory, Item
-
+from ... import utils
+from ...trade import BaseInventory, Item
 from .models import Sticker
-from .protobufs.base_gcmessages import CsoEconItem
+from .protobufs.base_gcmessages import CsoEconItem, CsoEconItemAttribute, CsoEconItemEquipped
 
 if TYPE_CHECKING:
     from .state import GCState
@@ -18,8 +15,6 @@ __all__ = (
     "BackPackItem",
     "BackPack",
 )
-
-BPI = TypeVar("BPI", bound="BackPackItem")
 
 
 class BackPackItem(Item):
@@ -36,6 +31,8 @@ class BackPackItem(Item):
         "casket_contained_item_count",
     ) + tuple(CsoEconItem.__annotations__)
 
+    REPR_ATTRS = (*Item.REPR_ATTRS, "position")
+
     position: int
     casket_id: int
     paint_index: float
@@ -44,40 +41,37 @@ class BackPackItem(Item):
     tradable_after: datetime
     stickers: list[Sticker]
     casket_contained_item_count: int
+    id: int
+    account_id: int
+    inventory: int
+    def_index: int
+    quantity: int
+    level: int
+    quality: int
+    flags: int
+    origin: int
+    custom_name: str
+    custom_desc: str
+    attribute: list[CsoEconItemAttribute]
+    interior_item: CsoEconItem
+    in_use: bool
+    style: int
+    original_id: int
+    equipped_state: list[CsoEconItemEquipped]
+    rarity: int
 
-    def __init__(self, item: Item, state: Optional[GCState] = None):  # noqa
-        for name, attr in inspect.getmembers(item, predicate=lambda attr: not _is_descriptor(attr)):
-            if not (name.startswith("__") and name.endswith("__")):
-                try:
-                    setattr(self, name, attr)
-                except (AttributeError, TypeError):
-                    pass
-
-    def __repr__(self) -> str:
-        item_repr = super().__repr__()[6:-1]
-        resolved = [item_repr]
-        attrs = ("position",)
-        resolved.extend(f"{attr}={getattr(self, attr, None)!r}" for attr in attrs)
-        return f"<BackPackItem {' '.join(resolved)}>"
+    def __init__(self, item: Item, *, _state: GCState | None = None):  # noqa
+        utils.update_class(item, self)
+        self._state = _state
 
 
-if TYPE_CHECKING:
-
-    class BackPackItem(BackPackItem, CsoEconItem):
-        # We don't want the extra bloat of betterproto.Message at runtime but we do want its fields
-        ...
-
-
-class BackPack(Inventory[BPI]):
+class BackPack(BaseInventory[BackPackItem]):
     """A class to represent the client's backpack."""
 
-    items: list[BPI]
-
     def __init__(self, inventory: Inventory):  # noqa
-        for name, attr in inspect.getmembers(inventory, lambda attr: not _is_descriptor(attr)):
-            if not (name.startswith("__") and name.endswith("__")):
-                try:
-                    setattr(self, name, attr)
-                except (AttributeError, TypeError):
-                    pass
-        self.items = [BackPackItem(item, self._state) for item in inventory.items]
+        utils.update_class(inventory, self)
+        self.items = [BackPackItem(item, _state=self._state) for item in inventory.items]  # type: ignore
+
+    async def update(self) -> None:
+        await super().update()
+        self.items = [BackPackItem(item, _state=self._state) for item in self.items]  # type: ignore

@@ -1,4 +1,4 @@
-from steam.enums import IntEnum
+from ...enums import IntEnum
 
 
 # fmt: off
