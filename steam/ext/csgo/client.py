@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from typing_extensions import ClassVar
 
+from ... import utils
 from ...client import Client
 from ...ext import commands
 from ...game import CSGO, Game
-from .models import CSGOClientUser
+from .models import ClientUser, User
 from .state import GCState
 
 __all__ = (
@@ -18,6 +19,7 @@ __all__ = (
 
 class Client(Client):
     GAME: ClassVar = CSGO
+    user: ClientUser
 
     def __init__(self, **options: Any):
         game = options.pop("game", None)
@@ -37,12 +39,16 @@ class Client(Client):
 
     def _handle_ready(self) -> None:
         self._connection._unpatched_inventory = self.user.inventory
+        self.http.user = ClientUser(self._connection, self.http.get_user(self.user.id64))  # type: ignore
         super()._handle_ready()
 
-    @property
-    def user(self) -> CSGOClientUser:
-        old_user = super().user
-        return CSGOClientUser(old_user) if old_user is not None else None  # type: ignore
+    if TYPE_CHECKING:
+
+        def get_user(self, id: utils.Intable) -> User | None:
+            ...
+
+        async def fetch_user(self, id: utils.Intable) -> User | None:
+            ...
 
 
 class Bot(commands.Bot, Client):

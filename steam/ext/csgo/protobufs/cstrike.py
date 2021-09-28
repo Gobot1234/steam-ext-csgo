@@ -7,7 +7,7 @@ from typing import List
 
 import betterproto
 
-from .engine_gcmessages import CEngineGotvSyncPacket
+from .engine import GotvSyncPacket
 
 
 class ECsgoSteamUserStat(betterproto.Enum):
@@ -187,7 +187,7 @@ class IpAddressMask(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgCsgoSteamUserStatChange(betterproto.Message):
+class CsgoSteamUserStatChange(betterproto.Message):
     ecsgosteamuserstat: "ECsgoSteamUserStat" = betterproto.enum_field(1)
     delta: int = betterproto.int32_field(2)
     absolute: bool = betterproto.bool_field(3)
@@ -235,7 +235,7 @@ class PlayerQuestData(betterproto.Message):
     mm_game_mode: int = betterproto.uint32_field(5)
     item_updates: List["MatchEndItemUpdates"] = betterproto.message_field(6)
     operation_points_eligible: bool = betterproto.bool_field(7)
-    userstatchanges: List["CMsgCsgoSteamUserStatChange"] = betterproto.message_field(8)
+    userstatchanges: List["CsgoSteamUserStatChange"] = betterproto.message_field(8)
 
 
 @dataclass(eq=False, repr=False)
@@ -296,7 +296,7 @@ class DeepPlayerMatchEvent(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcServerQuestUpdateData(betterproto.Message):
+class GcServerQuestUpdateData(betterproto.Message):
     player_quest_data: List["PlayerQuestData"] = betterproto.message_field(1)
     binary_data: bytes = betterproto.bytes_field(2)
     mm_game_mode: int = betterproto.uint32_field(3)
@@ -304,27 +304,27 @@ class CMsgGcServerQuestUpdateData(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGcOperationalStats(betterproto.Message):
+class MatchmakingGcOperationalStats(betterproto.Message):
     packetid: int = betterproto.int32_field(1)
     namekeys: List["OperationalStatisticDescription"] = betterproto.message_field(2)
     packets: List["OperationalStatisticsPacket"] = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ServerConfirm(betterproto.Message):
+class MatchmakingServerConfirm(betterproto.Message):
     token: int = betterproto.uint32_field(1)
     stamp: int = betterproto.uint32_field(2)
     exchange: int = betterproto.uint64_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Gc2ServerReservationUpdate(betterproto.Message):
+class ServerReservationUpdate(betterproto.Message):
     viewers_external_total: int = betterproto.uint32_field(1)
     viewers_external_steam: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingStart(betterproto.Message):
+class MatchmakingStart(betterproto.Message):
     account_ids: List[int] = betterproto.uint32_field(1)
     game_type: int = betterproto.uint32_field(2)
     ticket_data: str = betterproto.string_field(3)
@@ -334,12 +334,12 @@ class CMsgGccStrike15V2MatchmakingStart(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingStop(betterproto.Message):
+class MatchmakingStop(betterproto.Message):
     abandon: int = betterproto.int32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingClient2ServerPing(betterproto.Message):
+class MatchmakingClient2ServerPing(betterproto.Message):
     gameserverpings: List["GameServerPing"] = betterproto.message_field(1)
     offset_index: int = betterproto.int32_field(2)
     final_batch: int = betterproto.int32_field(3)
@@ -349,7 +349,7 @@ class CMsgGccStrike15V2MatchmakingClient2ServerPing(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ClientUpdate(betterproto.Message):
+class MatchmakingClientUpdate(betterproto.Message):
     matchmaking: int = betterproto.int32_field(1)
     waiting_account_id_sessions: List[int] = betterproto.uint32_field(2)
     error: str = betterproto.string_field(3)
@@ -360,7 +360,7 @@ class CMsgGccStrike15V2MatchmakingGc2ClientUpdate(betterproto.Message):
     failready_account_id_sessions: List[int] = betterproto.uint32_field(10)
     vacbanned_account_id_sessions: List[int] = betterproto.uint32_field(11)
     server_ipaddress_mask: "IpAddressMask" = betterproto.message_field(12)
-    notes: List["CMsgGccStrike15V2MatchmakingGc2ClientUpdateNote"] = betterproto.message_field(13)
+    notes: List["MatchmakingClientUpdateNote"] = betterproto.message_field(13)
     penalty_account_id_sessions_green: List[int] = betterproto.uint32_field(14)
     insufficientlevel_sessions: List[int] = betterproto.uint32_field(15)
     vsncheck_account_id_sessions: List[int] = betterproto.uint32_field(16)
@@ -369,7 +369,7 @@ class CMsgGccStrike15V2MatchmakingGc2ClientUpdate(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ClientUpdateNote(betterproto.Message):
+class MatchmakingClientUpdateNote(betterproto.Message):
     type: int = betterproto.int32_field(1)
     region_id: int = betterproto.int32_field(2)
     region_r: float = betterproto.float_field(3)
@@ -377,7 +377,7 @@ class CMsgGccStrike15V2MatchmakingGc2ClientUpdateNote(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentMatchDraft(betterproto.Message):
+class TournamentMatchDraft(betterproto.Message):
     event_id: int = betterproto.int32_field(1)
     event_stage_id: int = betterproto.int32_field(2)
     team_id_0: int = betterproto.int32_field(3)
@@ -387,11 +387,11 @@ class CDataGccStrike15V2TournamentMatchDraft(betterproto.Message):
     team_id_start: int = betterproto.int32_field(7)
     team_id_veto1: int = betterproto.int32_field(8)
     team_id_pickn: int = betterproto.int32_field(9)
-    drafts: List["CDataGccStrike15V2TournamentMatchDraftEntry"] = betterproto.message_field(10)
+    drafts: List["TournamentMatchDraftEntry"] = betterproto.message_field(10)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentMatchDraftEntry(betterproto.Message):
+class TournamentMatchDraftEntry(betterproto.Message):
     mapid: int = betterproto.int32_field(1)
     team_id_ct: int = betterproto.int32_field(2)
 
@@ -399,7 +399,7 @@ class CDataGccStrike15V2TournamentMatchDraftEntry(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class CPreMatchInfoData(betterproto.Message):
     predictions_pct: int = betterproto.int32_field(1)
-    draft: "CDataGccStrike15V2TournamentMatchDraft" = betterproto.message_field(4)
+    draft: "TournamentMatchDraft" = betterproto.message_field(4)
     stats: List["CPreMatchInfoDataTeamStats"] = betterproto.message_field(5)
     wins: List[int] = betterproto.int32_field(6)
 
@@ -412,7 +412,7 @@ class CPreMatchInfoDataTeamStats(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ServerReserve(betterproto.Message):
+class MatchmakingServerReserve(betterproto.Message):
     account_ids: List[int] = betterproto.uint32_field(1)
     game_type: int = betterproto.uint32_field(2)
     match_id: int = betterproto.uint64_field(3)
@@ -434,9 +434,9 @@ class CMsgGccStrike15V2MatchmakingGc2ServerReserve(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingServerReservationResponse(betterproto.Message):
+class MatchmakingServerReservationResponse(betterproto.Message):
     reservationid: int = betterproto.uint64_field(1)
-    reservation: "CMsgGccStrike15V2MatchmakingGc2ServerReserve" = betterproto.message_field(2)
+    reservation: "MatchmakingServerReserve" = betterproto.message_field(2)
     map: str = betterproto.string_field(3)
     gc_reservation_sent: int = betterproto.uint64_field(4)
     server_version: int = betterproto.uint32_field(5)
@@ -455,20 +455,20 @@ class CMsgGccStrike15V2MatchmakingServerReservationResponse(betterproto.Message)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ClientReserve(betterproto.Message):
+class MatchmakingClientReserve(betterproto.Message):
     serverid: int = betterproto.uint64_field(1)
     direct_udp_ip: int = betterproto.uint32_field(2)
     direct_udp_port: int = betterproto.uint32_field(3)
     reservationid: int = betterproto.uint64_field(4)
-    reservation: "CMsgGccStrike15V2MatchmakingGc2ServerReserve" = betterproto.message_field(5)
+    reservation: "MatchmakingServerReserve" = betterproto.message_field(5)
     map: str = betterproto.string_field(6)
     server_address: str = betterproto.string_field(7)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingServerRoundStats(betterproto.Message):
+class MatchmakingServerRoundStats(betterproto.Message):
     reservationid: int = betterproto.uint64_field(1)
-    reservation: "CMsgGccStrike15V2MatchmakingGc2ServerReserve" = betterproto.message_field(2)
+    reservation: "MatchmakingServerReserve" = betterproto.message_field(2)
     map: str = betterproto.string_field(3)
     round: int = betterproto.int32_field(4)
     kills: List[int] = betterproto.int32_field(5)
@@ -479,7 +479,7 @@ class CMsgGccStrike15V2MatchmakingServerRoundStats(betterproto.Message):
     round_result: int = betterproto.int32_field(10)
     match_result: int = betterproto.int32_field(11)
     team_scores: List[int] = betterproto.int32_field(12)
-    confirm: "CMsgGccStrike15V2MatchmakingGc2ServerConfirm" = betterproto.message_field(13)
+    confirm: "MatchmakingServerConfirm" = betterproto.message_field(13)
     reservation_stage: int = betterproto.int32_field(14)
     match_duration: int = betterproto.int32_field(15)
     enemy_kills: List[int] = betterproto.int32_field(16)
@@ -492,7 +492,7 @@ class CMsgGccStrike15V2MatchmakingServerRoundStats(betterproto.Message):
     spectators_count_tv: int = betterproto.uint32_field(23)
     spectators_count_lnk: int = betterproto.uint32_field(24)
     enemy_kills_agg: List[int] = betterproto.int32_field(25)
-    drop_info: "CMsgGccStrike15V2MatchmakingServerRoundStatsDropInfo" = betterproto.message_field(26)
+    drop_info: "MatchmakingServerRoundStatsDropInfo" = betterproto.message_field(26)
     b_switched_teams: bool = betterproto.bool_field(27)
     enemy_2_ks: List[int] = betterproto.int32_field(28)
     player_spawned: List[int] = betterproto.int32_field(29)
@@ -500,19 +500,19 @@ class CMsgGccStrike15V2MatchmakingServerRoundStats(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingServerRoundStatsDropInfo(betterproto.Message):
+class MatchmakingServerRoundStatsDropInfo(betterproto.Message):
     account_mvp: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingClient2GcHello(betterproto.Message):
+class MatchmakingClient2GcHello(betterproto.Message):
     pass
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ClientHello(betterproto.Message):
+class MatchmakingClientHello(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
-    ongoingmatch: "CMsgGccStrike15V2MatchmakingGc2ClientReserve" = betterproto.message_field(2)
+    ongoingmatch: "MatchmakingClientReserve" = betterproto.message_field(2)
     global_stats: "GlobalStatistics" = betterproto.message_field(3)
     penalty_seconds: int = betterproto.uint32_field(4)
     penalty_reason: int = betterproto.uint32_field(5)
@@ -533,36 +533,36 @@ class CMsgGccStrike15V2MatchmakingGc2ClientHello(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2AccountPrivacySettings(betterproto.Message):
-    settings: List["CMsgGccStrike15V2AccountPrivacySettingsSetting"] = betterproto.message_field(1)
+class AccountPrivacySettings(betterproto.Message):
+    settings: List["AccountPrivacySettingsSetting"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2AccountPrivacySettingsSetting(betterproto.Message):
+class AccountPrivacySettingsSetting(betterproto.Message):
     setting_type: int = betterproto.uint32_field(1)
     setting_value: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingGc2ClientAbandon(betterproto.Message):
+class MatchmakingClientAbandon(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
-    abandoned_match: "CMsgGccStrike15V2MatchmakingGc2ClientReserve" = betterproto.message_field(2)
+    abandoned_match: "MatchmakingClientReserve" = betterproto.message_field(2)
     penalty_seconds: int = betterproto.uint32_field(3)
     penalty_reason: int = betterproto.uint32_field(4)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientGcRankUpdate(betterproto.Message):
+class ClientGcRankUpdate(betterproto.Message):
     rankings: List["PlayerRankingInfo"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchmakingOperator2GcBlogUpdate(betterproto.Message):
+class MatchmakingOperator2GcBlogUpdate(betterproto.Message):
     main_post_url: str = betterproto.string_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ServerNotificationForUserPenalty(betterproto.Message):
+class ServerNotificationForUserPenalty(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
     reason: int = betterproto.uint32_field(2)
     seconds: int = betterproto.uint32_field(3)
@@ -570,7 +570,7 @@ class CMsgGccStrike15V2ServerNotificationForUserPenalty(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientReportPlayer(betterproto.Message):
+class ClientReportPlayer(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
     rpt_aimbot: int = betterproto.uint32_field(2)
     rpt_wallhack: int = betterproto.uint32_field(3)
@@ -583,7 +583,7 @@ class CMsgGccStrike15V2ClientReportPlayer(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientCommendPlayer(betterproto.Message):
+class ClientCommendPlayer(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
     match_id: int = betterproto.uint64_field(8)
     commendation: "PlayerCommendationInfo" = betterproto.message_field(9)
@@ -591,7 +591,7 @@ class CMsgGccStrike15V2ClientCommendPlayer(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientReportServer(betterproto.Message):
+class ClientReportServer(betterproto.Message):
     rpt_poorperf: int = betterproto.uint32_field(1)
     rpt_abusivemodels: int = betterproto.uint32_field(2)
     rpt_badmotd: int = betterproto.uint32_field(3)
@@ -601,7 +601,7 @@ class CMsgGccStrike15V2ClientReportServer(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientReportResponse(betterproto.Message):
+class ClientReportResponse(betterproto.Message):
     confirmation_id: int = betterproto.uint64_field(1)
     account_id: int = betterproto.uint32_field(2)
     server_ip: int = betterproto.uint32_field(3)
@@ -611,7 +611,7 @@ class CMsgGccStrike15V2ClientReportResponse(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientRequestWatchInfoFriends(betterproto.Message):
+class ClientRequestWatchInfoFriends(betterproto.Message):
     request_id: int = betterproto.uint32_field(1)
     account_ids: List[int] = betterproto.uint32_field(2)
     serverid: int = betterproto.uint64_field(3)
@@ -638,34 +638,34 @@ class WatchableMatchInfo(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientRequestJoinFriendData(betterproto.Message):
+class ClientRequestJoinFriendData(betterproto.Message):
     version: int = betterproto.uint32_field(1)
     account_id: int = betterproto.uint32_field(2)
     join_token: int = betterproto.uint32_field(3)
     join_ipp: int = betterproto.uint32_field(4)
-    res: "CMsgGccStrike15V2MatchmakingGc2ClientReserve" = betterproto.message_field(5)
+    res: "MatchmakingClientReserve" = betterproto.message_field(5)
     errormsg: str = betterproto.string_field(6)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientRequestJoinServerData(betterproto.Message):
+class ClientRequestJoinServerData(betterproto.Message):
     version: int = betterproto.uint32_field(1)
     account_id: int = betterproto.uint32_field(2)
     serverid: int = betterproto.uint64_field(3)
     server_ip: int = betterproto.uint32_field(4)
     server_port: int = betterproto.uint32_field(5)
-    res: "CMsgGccStrike15V2MatchmakingGc2ClientReserve" = betterproto.message_field(6)
+    res: "MatchmakingClientReserve" = betterproto.message_field(6)
     errormsg: str = betterproto.string_field(7)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcCstrike15V2ClientRequestNewMission(betterproto.Message):
+class ClientRequestNewMission(betterproto.Message):
     mission_id: int = betterproto.uint32_field(2)
     campaign_id: int = betterproto.uint32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcCstrike15V2ClientRedeemMissionReward(betterproto.Message):
+class ClientRedeemMissionReward(betterproto.Message):
     campaign_id: int = betterproto.uint32_field(1)
     redeem_id: int = betterproto.uint32_field(2)
     redeemable_balance: int = betterproto.uint32_field(3)
@@ -673,7 +673,7 @@ class CMsgGcCstrike15V2ClientRedeemMissionReward(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcCstrike15V2Gc2ServerNotifyXpRewarded(betterproto.Message):
+class ServerNotifyXpRewarded(betterproto.Message):
     xp_progress_data: List["XpProgressData"] = betterproto.message_field(1)
     account_id: int = betterproto.uint32_field(2)
     current_xp: int = betterproto.uint32_field(3)
@@ -683,27 +683,27 @@ class CMsgGcCstrike15V2Gc2ServerNotifyXpRewarded(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15ClientDeepStats(betterproto.Message):
+class ClientDeepStats(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
-    range: "CMsgGccStrike15ClientDeepStatsDeepStatsRange" = betterproto.message_field(2)
-    matches: List["CMsgGccStrike15ClientDeepStatsDeepStatsMatch"] = betterproto.message_field(3)
+    range: "ClientDeepStatsDeepStatsRange" = betterproto.message_field(2)
+    matches: List["ClientDeepStatsDeepStatsMatch"] = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15ClientDeepStatsDeepStatsRange(betterproto.Message):
+class ClientDeepStatsDeepStatsRange(betterproto.Message):
     begin: int = betterproto.uint32_field(1)
     end: int = betterproto.uint32_field(2)
     frozen: bool = betterproto.bool_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15ClientDeepStatsDeepStatsMatch(betterproto.Message):
+class ClientDeepStatsDeepStatsMatch(betterproto.Message):
     player: "DeepPlayerStatsEntry" = betterproto.message_field(1)
     events: List["DeepPlayerMatchEvent"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2WatchInfoUsers(betterproto.Message):
+class WatchInfoUsers(betterproto.Message):
     request_id: int = betterproto.uint32_field(1)
     account_ids: List[int] = betterproto.uint32_field(2)
     watchable_match_infos: List["WatchableMatchInfo"] = betterproto.message_field(3)
@@ -711,7 +711,7 @@ class CMsgGccStrike15V2WatchInfoUsers(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientRequestPlayersProfile(betterproto.Message):
+class ClientRequestPlayersProfile(betterproto.Message):
     request_id_deprecated: int = betterproto.uint32_field(1)
     account_ids_deprecated: List[int] = betterproto.uint32_field(2)
     account_id: int = betterproto.uint32_field(3)
@@ -719,13 +719,13 @@ class CMsgGccStrike15V2ClientRequestPlayersProfile(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PlayersProfile(betterproto.Message):
+class PlayersProfile(betterproto.Message):
     request_id: int = betterproto.uint32_field(1)
-    account_profiles: List["CMsgGccStrike15V2MatchmakingGc2ClientHello"] = betterproto.message_field(2)
+    account_profiles: List["MatchmakingClientHello"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PlayerOverwatchCaseUpdate(betterproto.Message):
+class PlayerOverwatchCaseUpdate(betterproto.Message):
     caseid: int = betterproto.uint64_field(1)
     suspectid: int = betterproto.uint32_field(3)
     fractionid: int = betterproto.uint32_field(4)
@@ -737,7 +737,7 @@ class CMsgGccStrike15V2PlayerOverwatchCaseUpdate(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PlayerOverwatchCaseAssignment(betterproto.Message):
+class PlayerOverwatchCaseAssignment(betterproto.Message):
     caseid: int = betterproto.uint64_field(1)
     caseurl: str = betterproto.string_field(2)
     verdict: int = betterproto.uint32_field(3)
@@ -752,7 +752,7 @@ class CMsgGccStrike15V2PlayerOverwatchCaseAssignment(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PlayerOverwatchCaseStatus(betterproto.Message):
+class PlayerOverwatchCaseStatus(betterproto.Message):
     caseid: int = betterproto.uint64_field(1)
     statusid: int = betterproto.uint32_field(2)
 
@@ -764,26 +764,26 @@ class CClientHeaderOverwatchEvidence(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Gc2ClientTextMsg(betterproto.Message):
+class ClientTextMsg(betterproto.Message):
     id: int = betterproto.uint32_field(1)
     type: int = betterproto.uint32_field(2)
     payload: bytes = betterproto.bytes_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Client2GcTextMsg(betterproto.Message):
+class Client2GcTextMsg(betterproto.Message):
     id: int = betterproto.uint32_field(1)
     args: List[bytes] = betterproto.bytes_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchEndRunRewardDrops(betterproto.Message):
-    serverinfo: "CMsgGccStrike15V2MatchmakingServerReservationResponse" = betterproto.message_field(3)
-    match_end_quest_data: "CMsgGcServerQuestUpdateData" = betterproto.message_field(4)
+class MatchEndRunRewardDrops(betterproto.Message):
+    serverinfo: "MatchmakingServerReservationResponse" = betterproto.message_field(3)
+    match_end_quest_data: "GcServerQuestUpdateData" = betterproto.message_field(4)
 
 
 @dataclass(eq=False, repr=False)
-class CEconItemPreviewDataBlock(betterproto.Message):
+class PreviewDataBlock(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     itemid: int = betterproto.uint64_field(2)
     defindex: int = betterproto.uint32_field(3)
@@ -795,7 +795,7 @@ class CEconItemPreviewDataBlock(betterproto.Message):
     killeaterscoretype: int = betterproto.uint32_field(9)
     killeatervalue: int = betterproto.uint32_field(10)
     customname: str = betterproto.string_field(11)
-    stickers: List["CEconItemPreviewDataBlockSticker"] = betterproto.message_field(12)
+    stickers: List["PreviewDataBlockSticker"] = betterproto.message_field(12)
     inventory: int = betterproto.uint32_field(13)
     origin: int = betterproto.uint32_field(14)
     questid: int = betterproto.uint32_field(15)
@@ -805,7 +805,7 @@ class CEconItemPreviewDataBlock(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CEconItemPreviewDataBlockSticker(betterproto.Message):
+class PreviewDataBlockSticker(betterproto.Message):
     slot: int = betterproto.uint32_field(1)
     sticker_id: int = betterproto.uint32_field(2)
     wear: float = betterproto.float_field(3)
@@ -815,17 +815,17 @@ class CEconItemPreviewDataBlockSticker(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchEndRewardDropsNotification(betterproto.Message):
-    iteminfo: "CEconItemPreviewDataBlock" = betterproto.message_field(6)
+class MatchEndRewardDropsNotification(betterproto.Message):
+    iteminfo: "PreviewDataBlock" = betterproto.message_field(6)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgItemAcknowledged(betterproto.Message):
-    iteminfo: "CEconItemPreviewDataBlock" = betterproto.message_field(1)
+class ItemAcknowledged(betterproto.Message):
+    iteminfo: "PreviewDataBlock" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Client2GcEconPreviewDataBlockRequest(betterproto.Message):
+class Client2GcEconPreviewDataBlockRequest(betterproto.Message):
     param_s: int = betterproto.uint64_field(1)
     param_a: int = betterproto.uint64_field(2)
     param_d: int = betterproto.uint64_field(3)
@@ -833,105 +833,105 @@ class CMsgGccStrike15V2Client2GcEconPreviewDataBlockRequest(betterproto.Message)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Client2GcEconPreviewDataBlockResponse(betterproto.Message):
-    iteminfo: "CEconItemPreviewDataBlock" = betterproto.message_field(1)
+class Client2GcEconPreviewDataBlockResponse(betterproto.Message):
+    iteminfo: "PreviewDataBlock" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchListRequestCurrentLiveGames(betterproto.Message):
+class MatchListRequestCurrentLiveGames(betterproto.Message):
     pass
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchListRequestLiveGameForUser(betterproto.Message):
+class MatchListRequestLiveGameForUser(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchListRequestRecentUserGames(betterproto.Message):
+class MatchListRequestRecentUserGames(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchListRequestTournamentGames(betterproto.Message):
+class MatchListRequestTournamentGames(betterproto.Message):
     eventid: int = betterproto.int32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchListRequestFullGameInfo(betterproto.Message):
+class MatchListRequestFullGameInfo(betterproto.Message):
     matchid: int = betterproto.uint64_field(1)
     outcomeid: int = betterproto.uint64_field(2)
     token: int = betterproto.uint32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2MatchInfo(betterproto.Message):
+class MatchInfo(betterproto.Message):
     matchid: int = betterproto.uint64_field(1)
     matchtime: int = betterproto.uint32_field(2)
     watchablematchinfo: "WatchableMatchInfo" = betterproto.message_field(3)
-    roundstats_legacy: "CMsgGccStrike15V2MatchmakingServerRoundStats" = betterproto.message_field(4)
-    roundstatsall: List["CMsgGccStrike15V2MatchmakingServerRoundStats"] = betterproto.message_field(5)
+    roundstats_legacy: "MatchmakingServerRoundStats" = betterproto.message_field(4)
+    roundstatsall: List["MatchmakingServerRoundStats"] = betterproto.message_field(5)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentGroupTeam(betterproto.Message):
+class TournamentGroupTeam(betterproto.Message):
     team_id: int = betterproto.int32_field(1)
     score: int = betterproto.int32_field(2)
     correctpick: bool = betterproto.bool_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentGroup(betterproto.Message):
+class TournamentGroup(betterproto.Message):
     groupid: int = betterproto.uint32_field(1)
     name: str = betterproto.string_field(2)
     desc: str = betterproto.string_field(3)
     picks_deprecated: int = betterproto.uint32_field(4)
-    teams: List["CDataGccStrike15V2TournamentGroupTeam"] = betterproto.message_field(5)
+    teams: List["TournamentGroupTeam"] = betterproto.message_field(5)
     stage_ids: List[int] = betterproto.int32_field(6)
     picklockuntiltime: int = betterproto.uint32_field(7)
     pickableteams: int = betterproto.uint32_field(8)
     points_per_pick: int = betterproto.uint32_field(9)
-    picks: List["CDataGccStrike15V2TournamentGroupPicks"] = betterproto.message_field(10)
+    picks: List["TournamentGroupPicks"] = betterproto.message_field(10)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentGroupPicks(betterproto.Message):
+class TournamentGroupPicks(betterproto.Message):
     pickids: List[int] = betterproto.int32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentSection(betterproto.Message):
+class TournamentSection(betterproto.Message):
     sectionid: int = betterproto.uint32_field(1)
     name: str = betterproto.string_field(2)
     desc: str = betterproto.string_field(3)
-    groups: List["CDataGccStrike15V2TournamentGroup"] = betterproto.message_field(4)
+    groups: List["TournamentGroup"] = betterproto.message_field(4)
 
 
 @dataclass(eq=False, repr=False)
-class CDataGccStrike15V2TournamentInfo(betterproto.Message):
-    sections: List["CDataGccStrike15V2TournamentSection"] = betterproto.message_field(1)
+class TournamentInfo(betterproto.Message):
+    sections: List["TournamentSection"] = betterproto.message_field(1)
     tournament_event: "TournamentEvent" = betterproto.message_field(2)
     tournament_teams: List["TournamentTeam"] = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2MatchList(betterproto.Message):
+class MatchList(betterproto.Message):
     msgrequestid: int = betterproto.uint32_field(1)
     accountid: int = betterproto.uint32_field(2)
     servertime: int = betterproto.uint32_field(3)
-    matches: List["CDataGccStrike15V2MatchInfo"] = betterproto.message_field(4)
+    matches: List["MatchInfo"] = betterproto.message_field(4)
     streams: List["TournamentTeam"] = betterproto.message_field(5)
-    tournamentinfo: "CDataGccStrike15V2TournamentInfo" = betterproto.message_field(6)
+    tournamentinfo: "TournamentInfo" = betterproto.message_field(6)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Predictions(betterproto.Message):
+class Predictions(betterproto.Message):
     event_id: int = betterproto.uint32_field(1)
-    group_match_team_picks: List["CMsgGccStrike15V2PredictionsGroupMatchTeamPick"] = betterproto.message_field(2)
+    group_match_team_picks: List["PredictionsGroupMatchTeamPick"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PredictionsGroupMatchTeamPick(betterproto.Message):
+class PredictionsGroupMatchTeamPick(betterproto.Message):
     sectionid: int = betterproto.int32_field(1)
     groupid: int = betterproto.int32_field(2)
     index: int = betterproto.int32_field(3)
@@ -940,22 +940,22 @@ class CMsgGccStrike15V2PredictionsGroupMatchTeamPick(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Fantasy(betterproto.Message):
+class Fantasy(betterproto.Message):
     event_id: int = betterproto.uint32_field(1)
-    teams: List["CMsgGccStrike15V2FantasyFantasyTeam"] = betterproto.message_field(2)
+    teams: List["FantasyFantasyTeam"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2FantasyFantasySlot(betterproto.Message):
+class FantasyFantasySlot(betterproto.Message):
     type: int = betterproto.int32_field(1)
     pick: int = betterproto.int32_field(2)
     itemid: int = betterproto.uint64_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2FantasyFantasyTeam(betterproto.Message):
+class FantasyFantasyTeam(betterproto.Message):
     sectionid: int = betterproto.int32_field(1)
-    slots: List["CMsgGccStrike15V2FantasyFantasySlot"] = betterproto.message_field(2)
+    slots: List["FantasyFantasySlot"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -964,7 +964,7 @@ class CAttributeString(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgCStrike15Welcome(betterproto.Message):
+class CStrike15Welcome(betterproto.Message):
     store_item_hash: int = betterproto.uint32_field(5)
     timeplayedconsecutively: int = betterproto.uint32_field(6)
     time_first_played: int = betterproto.uint32_field(10)
@@ -975,7 +975,7 @@ class CMsgCStrike15Welcome(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientVarValueNotificationInfo(betterproto.Message):
+class ClientVarValueNotificationInfo(betterproto.Message):
     value_name: str = betterproto.string_field(1)
     value_int: int = betterproto.int32_field(2)
     server_addr: int = betterproto.uint32_field(3)
@@ -984,45 +984,45 @@ class CMsgGccStrike15V2ClientVarValueNotificationInfo(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ServerVarValueNotificationInfo(betterproto.Message):
+class ServerVarValueNotificationInfo(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     viewangles: List[int] = betterproto.uint32_field(2)
     type: int = betterproto.uint32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2GiftsLeaderboardRequest(betterproto.Message):
+class GiftsLeaderboardRequest(betterproto.Message):
     pass
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2GiftsLeaderboardResponse(betterproto.Message):
+class GiftsLeaderboardResponse(betterproto.Message):
     servertime: int = betterproto.uint32_field(1)
     time_period_seconds: int = betterproto.uint32_field(2)
     total_gifts_given: int = betterproto.uint32_field(3)
     total_givers: int = betterproto.uint32_field(4)
-    entries: List["CMsgGccStrike15V2GiftsLeaderboardResponseGiftLeaderboardEntry"] = betterproto.message_field(5)
+    entries: List["GiftsLeaderboardResponseGiftLeaderboardEntry"] = betterproto.message_field(5)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2GiftsLeaderboardResponseGiftLeaderboardEntry(betterproto.Message):
+class GiftsLeaderboardResponseGiftLeaderboardEntry(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     gifts: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientSubmitSurveyVote(betterproto.Message):
+class ClientSubmitSurveyVote(betterproto.Message):
     survey_id: int = betterproto.uint32_field(1)
     vote: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Server2GcClientValidate(betterproto.Message):
+class Server2GcClientValidate(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Gc2ClientTournamentInfo(betterproto.Message):
+class ClientTournamentInfo(betterproto.Message):
     eventid: int = betterproto.uint32_field(1)
     stageid: int = betterproto.uint32_field(2)
     game_type: int = betterproto.uint32_field(3)
@@ -1030,21 +1030,21 @@ class CMsgGccStrike15V2Gc2ClientTournamentInfo(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CsoEconCoupon(betterproto.Message):
+class EconCoupon(betterproto.Message):
     entryid: int = betterproto.uint32_field(1)
     defidx: int = betterproto.uint32_field(2)
     expiration_date: int = betterproto.fixed32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CsoQuestProgress(betterproto.Message):
+class QuestProgress(betterproto.Message):
     questid: int = betterproto.uint32_field(1)
     points_remaining: int = betterproto.uint32_field(2)
     bonus_points: int = betterproto.uint32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CsoAccountSeasonalOperation(betterproto.Message):
+class AccountSeasonalOperation(betterproto.Message):
     season_value: int = betterproto.uint32_field(1)
     tier_unlocked: int = betterproto.uint32_field(2)
     premium_tiers: int = betterproto.uint32_field(3)
@@ -1055,36 +1055,36 @@ class CsoAccountSeasonalOperation(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CsoPersonaDataPublic(betterproto.Message):
+class PersonaDataPublic(betterproto.Message):
     player_level: int = betterproto.int32_field(1)
     commendation: "PlayerCommendationInfo" = betterproto.message_field(2)
     elevated_state: bool = betterproto.bool_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcGlobalGameSubscribe(betterproto.Message):
+class GcGlobalGameSubscribe(betterproto.Message):
     ticket: int = betterproto.uint64_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcGlobalGameUnsubscribe(betterproto.Message):
+class GcGlobalGameUnsubscribe(betterproto.Message):
     timeleft: int = betterproto.int32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcGlobalGamePlay(betterproto.Message):
+class GcGlobalGamePlay(betterproto.Message):
     ticket: int = betterproto.uint64_field(1)
     gametimems: int = betterproto.uint32_field(2)
     msperpoint: int = betterproto.uint32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2AcknowledgePenalty(betterproto.Message):
+class AcknowledgePenalty(betterproto.Message):
     acknowledged: int = betterproto.int32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Client2GcRequestPrestigeCoin(betterproto.Message):
+class Client2GcRequestPrestigeCoin(betterproto.Message):
     defindex: int = betterproto.uint32_field(1)
     upgradeid: int = betterproto.uint64_field(2)
     hours: int = betterproto.uint32_field(3)
@@ -1092,37 +1092,37 @@ class CMsgGccStrike15V2Client2GcRequestPrestigeCoin(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Client2GcStreamUnlock(betterproto.Message):
+class Client2GcStreamUnlock(betterproto.Message):
     ticket: int = betterproto.uint64_field(1)
     os: int = betterproto.int32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientToGcRequestElevate(betterproto.Message):
+class ClientToGcRequestElevate(betterproto.Message):
     stage: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientToGcChat(betterproto.Message):
+class ClientToGcChat(betterproto.Message):
     match_id: int = betterproto.uint64_field(1)
     text: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2GcToClientChat(betterproto.Message):
+class GcToClientChat(betterproto.Message):
     account_id: int = betterproto.uint32_field(1)
     text: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientAuthKeyCode(betterproto.Message):
+class ClientAuthKeyCode(betterproto.Message):
     eventid: int = betterproto.uint32_field(1)
     code: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15GotvSyncPacket(betterproto.Message):
-    data: "CEngineGotvSyncPacket" = betterproto.message_field(1)
+class GotvSyncPacket(betterproto.Message):
+    data: "GotvSyncPacket" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -1144,27 +1144,27 @@ class PlayerDecalDigitalSignature(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPlayerDecalSign(betterproto.Message):
+class ClientPlayerDecalSign(betterproto.Message):
     data: "PlayerDecalDigitalSignature" = betterproto.message_field(1)
     itemid: int = betterproto.uint64_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientLogonFatalError(betterproto.Message):
+class ClientLogonFatalError(betterproto.Message):
     errorcode: int = betterproto.uint32_field(1)
     message: str = betterproto.string_field(2)
     country: str = betterproto.string_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPollState(betterproto.Message):
+class ClientPollState(betterproto.Message):
     pollid: int = betterproto.uint32_field(1)
     names: List[str] = betterproto.string_field(2)
     values: List[int] = betterproto.int32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PartyRegister(betterproto.Message):
+class PartyRegister(betterproto.Message):
     id: int = betterproto.uint32_field(1)
     ver: int = betterproto.uint32_field(2)
     apr: int = betterproto.uint32_field(3)
@@ -1177,7 +1177,7 @@ class CMsgGccStrike15V2PartyRegister(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PartySearch(betterproto.Message):
+class PartySearch(betterproto.Message):
     ver: int = betterproto.uint32_field(1)
     apr: int = betterproto.uint32_field(2)
     ark: int = betterproto.uint32_field(3)
@@ -1187,12 +1187,12 @@ class CMsgGccStrike15V2PartySearch(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PartySearchResults(betterproto.Message):
-    entries: List["CMsgGccStrike15V2PartySearchResultsEntry"] = betterproto.message_field(1)
+class PartySearchResults(betterproto.Message):
+    entries: List["PartySearchResultsEntry"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PartySearchResultsEntry(betterproto.Message):
+class PartySearchResultsEntry(betterproto.Message):
     id: int = betterproto.uint32_field(1)
     grp: int = betterproto.uint32_field(2)
     game_type: int = betterproto.uint32_field(3)
@@ -1202,26 +1202,26 @@ class CMsgGccStrike15V2PartySearchResultsEntry(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2PartyInvite(betterproto.Message):
+class PartyInvite(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     lobbyid: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2AccountRequestCoPlays(betterproto.Message):
-    players: List["CMsgGccStrike15V2AccountRequestCoPlaysPlayer"] = betterproto.message_field(1)
+class AccountRequestCoPlays(betterproto.Message):
+    players: List["AccountRequestCoPlaysPlayer"] = betterproto.message_field(1)
     servertime: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2AccountRequestCoPlaysPlayer(betterproto.Message):
+class AccountRequestCoPlaysPlayer(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     rtcoplay: int = betterproto.uint32_field(2)
     online: bool = betterproto.bool_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientToGcRequestTicket(betterproto.Message):
+class ClientToGcRequestTicket(betterproto.Message):
     authorized_steam_id: int = betterproto.fixed64_field(1)
     authorized_public_ip: int = betterproto.fixed32_field(2)
     gameserver_steam_id: int = betterproto.fixed64_field(3)
@@ -1229,70 +1229,70 @@ class CMsgGccStrike15V2ClientToGcRequestTicket(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcToClientSteamDatagramTicket(betterproto.Message):
+class GcToClientSteamDatagramTicket(betterproto.Message):
     serialized_ticket: bytes = betterproto.bytes_field(16)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientRequestOffers(betterproto.Message):
+class ClientRequestOffers(betterproto.Message):
     pass
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientRequestSouvenir(betterproto.Message):
+class ClientRequestSouvenir(betterproto.Message):
     itemid: int = betterproto.uint64_field(1)
     matchid: int = betterproto.uint64_field(2)
     eventid: int = betterproto.int32_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientAccountBalance(betterproto.Message):
+class ClientAccountBalance(betterproto.Message):
     amount: int = betterproto.uint64_field(1)
     url: str = betterproto.string_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPartyJoinRelay(betterproto.Message):
+class ClientPartyJoinRelay(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     lobbyid: int = betterproto.uint64_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPartyWarning(betterproto.Message):
-    entries: List["CMsgGccStrike15V2ClientPartyWarningEntry"] = betterproto.message_field(1)
+class ClientPartyWarning(betterproto.Message):
+    entries: List["ClientPartyWarningEntry"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPartyWarningEntry(betterproto.Message):
+class ClientPartyWarningEntry(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     warntype: int = betterproto.uint32_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2SetEventFavorite(betterproto.Message):
+class SetEventFavorite(betterproto.Message):
     eventid: int = betterproto.uint64_field(1)
     is_favorite: bool = betterproto.bool_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2GetEventFavoritesRequest(betterproto.Message):
+class GetEventFavoritesRequest(betterproto.Message):
     all_events: bool = betterproto.bool_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2GetEventFavoritesResponse(betterproto.Message):
+class GetEventFavoritesResponse(betterproto.Message):
     all_events: bool = betterproto.bool_field(1)
     json_favorites: str = betterproto.string_field(2)
     json_featured: str = betterproto.string_field(3)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPerfReport(betterproto.Message):
-    entries: List["CMsgGccStrike15V2ClientPerfReportEntry"] = betterproto.message_field(1)
+class ClientPerfReport(betterproto.Message):
+    entries: List["ClientPerfReportEntry"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientPerfReportEntry(betterproto.Message):
+class ClientPerfReportEntry(betterproto.Message):
     perfcounter: int = betterproto.uint32_field(1)
     length: int = betterproto.uint32_field(2)
     reference: bytes = betterproto.bytes_field(3)
@@ -1310,7 +1310,7 @@ class CvDiagnostic(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2ClientReportValidation(betterproto.Message):
+class ClientReportValidation(betterproto.Message):
     file_report: str = betterproto.string_field(1)
     command_line: str = betterproto.string_field(2)
     total_files: int = betterproto.uint32_field(3)
@@ -1334,7 +1334,7 @@ class CMsgGccStrike15V2ClientReportValidation(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Gc2ClientRefuseSecureMode(betterproto.Message):
+class ClientRefuseSecureMode(betterproto.Message):
     file_report: str = betterproto.string_field(1)
     offer_insecure_mode: bool = betterproto.bool_field(2)
     offer_secure_mode: bool = betterproto.bool_field(3)
@@ -1345,6 +1345,6 @@ class CMsgGccStrike15V2Gc2ClientRefuseSecureMode(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGccStrike15V2Gc2ClientRequestValidation(betterproto.Message):
+class ClientRequestValidation(betterproto.Message):
     full_report: bool = betterproto.bool_field(1)
     module: str = betterproto.string_field(2)

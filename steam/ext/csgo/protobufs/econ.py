@@ -9,7 +9,7 @@ import betterproto
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcGiftedItems(betterproto.Message):
+class GiftedItems(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
     giftdefindex: int = betterproto.uint32_field(2)
     max_gifts_possible: int = betterproto.uint32_field(3)
@@ -18,23 +18,23 @@ class CMsgGcGiftedItems(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class CMsgApplyAutograph(betterproto.Message):
+class ApplyAutograph(betterproto.Message):
     autograph_item_id: int = betterproto.uint64_field(1)
     item_item_id: int = betterproto.uint64_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgCasketItem(betterproto.Message):
+class CasketItem(betterproto.Message):
     casket_item_id: int = betterproto.uint64_field(1)
     item_item_id: int = betterproto.uint64_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcUserTrackTimePlayedConsecutively(betterproto.Message):
+class UserTrackTimePlayedConsecutively(betterproto.Message):
     state: int = betterproto.uint32_field(1)
 
 
 @dataclass(eq=False, repr=False)
-class CMsgGcItemCustomizationNotification(betterproto.Message):
+class ItemCustomizationNotification(betterproto.Message):
     item_id: List[int] = betterproto.uint64_field(1)
     request: int = betterproto.uint32_field(2)

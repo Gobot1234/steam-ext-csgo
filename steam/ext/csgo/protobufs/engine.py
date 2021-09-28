@@ -8,7 +8,7 @@ import betterproto
 
 
 @dataclass(eq=False, repr=False)
-class CEngineGotvSyncPacket(betterproto.Message):
+class GotvSyncPacket(betterproto.Message):
     match_id: int = betterproto.uint64_field(1)
     instance_id: int = betterproto.uint32_field(2)
     signupfragment: int = betterproto.uint32_field(3)

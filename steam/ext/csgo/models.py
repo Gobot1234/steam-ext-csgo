@@ -6,20 +6,19 @@ from typing import TYPE_CHECKING, overload
 
 from typing_extensions import Literal
 
-from ... import utils
+from ... import abc, user
 from ...game import CSGO, Game
 from ...trade import Inventory
-from ...user import ClientUser
-from .protobufs import cstrike15_gcmessages as cstrike
-from .protobufs.cstrike15_gcmessages import CEconItemPreviewDataBlockSticker as ProtoSticker
+from .protobufs import cstrike
 
 if TYPE_CHECKING:
-    from .backpack import BackPack
+    from .backpack import Backpack
+    from .state import ConnectionState
 
 
 @dataclass
 class Sticker:
-    __slots__ = tuple(ProtoSticker.__annotations__)
+    __slots__ = tuple(cstrike.PreviewDataBlockSticker.__annotations__)
 
     slot: Literal[1, 2, 3, 4, 5]  # TODO: enum these
     sticker_id: int
@@ -28,76 +27,74 @@ class Sticker:
     rotation: float | None
 
     @classmethod
-    def get_attrs(cls):
-        attrs = list(ProtoSticker.__annotations__)
-        del attrs[0]
-        del attrs[0]
-        return attrs
+    def _get_attrs(cls) -> list[str]:
+        return cls.__slots__[2:]  # the attributes to decode on
 
 
 if TYPE_CHECKING:
 
-    class Sticker(Sticker, ProtoSticker):
+    class Sticker(Sticker, cstrike.PreviewDataBlockSticker):
         ...
 
 
-class CSGOClientUser(ClientUser):
-    def __init__(self, client_user: ClientUser, msg: cstrike.CMsgGccStrike15V2MatchmakingGc2ClientHello):  # noqa
-        self.in_match = msg.ongoingmatch
-        self.global_stats = msg.global_stats
-        self.penalty_seconds = msg.penalty_seconds
-        self.penalty_reason = msg.penalty_reason
-        self.vac_banned = msg.vac_banned
-        self.ranking = msg.ranking
-        self.commendation = msg.commendation
-        self.medals = msg.medals
-        self.current_event = msg.my_current_event
-        self.current_event_teams = msg.my_current_event_teams
-        self.current_team = msg.my_current_team
-        self.current_event_stages = msg.my_current_event_stages
-        self.survey_vote = msg.survey_vote
-        self.activity = msg.activity
-        self.player_level = msg.player_level
-        self.current_xp = msg.player_cur_xp
-        self.xp_bonus_flags = msg.player_xp_bonus_flags
-        self.rankings = msg.rankings
+class BaseUser(abc.BaseUser):
+    __slots__ = ()
+    _state: ConnectionState
 
-        utils.update_class(client_user, self)
+    async def csgo_profile(self) -> ProfileInfo:
+        msg = await self._state.fetch_user_csgo_profile(self.id64)
+        return ProfileInfo(msg)
+
+
+class User(BaseUser, user.User):
+    __slots__ = ()
+
+    async def recent_games(self) -> ...:
+        ...
+
+
+class ClientUser(BaseUser, user.ClientUser):
+    __slots__ = ("_profile_info_msg",)
+
+    if TYPE_CHECKING:
+
+        @overload
+        async def inventory(self, game: Literal[CSGO]) -> Backpack:
+            ...
+
+        @overload
+        async def inventory(self, game: Game) -> Inventory:  # type: ignore
+            ...
+
+    async def csgo_profile(self) -> ProfileInfo:
+        return ProfileInfo(self._profile_info_msg)
+
+    async def live_games(self) -> ...:
+        ...
+
+
+class ProfileInfo:
+    def __init__(self, proto: cstrike.PlayersProfile):
+        self.in_match = proto.ongoingmatch
+        self.global_stats = proto.global_stats
+        self.penalty_seconds = proto.penalty_seconds
+        self.penalty_reason = proto.penalty_reason
+        self.vac_banned = proto.vac_banned
+        self.ranking = proto.ranking
+        self.commendation = proto.commendation
+        self.medals = proto.medals
+        self.current_event = proto.my_current_event
+        self.current_event_teams = proto.my_current_event_teams
+        self.current_team = proto.my_current_team
+        self.current_event_stages = proto.my_current_event_stages
+        self.survey_vote = proto.survey_vote
+        self.activity = proto.activity
+        self.current_xp = proto.player_cur_xp
+        self.player_level = proto.player_level
+        self.xp_bonus_flags = proto.player_xp_bonus_flags
+        self.rankings = proto.rankings
 
     @property
     def percentage_of_current_level(self) -> int:
         """The user's current level."""
         return math.floor((self.current_xp - 327680000) / 5000)
-
-    @overload
-    async def inventory(self, game: Literal[CSGO]) -> BackPack:
-        ...
-
-    @overload
-    async def inventory(self, game: Game) -> Inventory:
-        ...
-
-    async def inventory(self, game: Game) -> Inventory | BackPack:
-        return await super().inventory(game)
-
-
-class AccountInfo:
-    def __init__(self, msg: cstrike.CMsgGccStrike15V2MatchmakingGc2ClientHello):
-        self.in_match = msg.ongoingmatch
-        self.global_stats = msg.global_stats
-        self.penalty_seconds = msg.penalty_seconds
-        self.penalty_reason = msg.penalty_reason
-        self.vac_banned = msg.vac_banned
-        self.ranking = msg.ranking
-        self.commendation = msg.commendation
-        self.medals = msg.medals
-        self.current_event = msg.my_current_event
-        self.current_event_teams = msg.my_current_event_teams
-        self.current_team = msg.my_current_team
-        self.current_event_stages = msg.my_current_event_stages
-        self.survey_vote = msg.survey_vote
-        self.activity = msg.activity
-        self.current_xp = msg.player_cur_xp
-        self.player_level = msg.player_level
-        self.xp_bonus_flags = msg.player_xp_bonus_flags
-        self.rankings = msg.rankings
