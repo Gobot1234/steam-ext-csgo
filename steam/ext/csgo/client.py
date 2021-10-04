@@ -37,9 +37,9 @@ class Client(Client):
     def _get_state(self, **options: Any) -> GCState:
         return GCState(client=self, **options)
 
-    def _handle_ready(self) -> None:
+    async def _handle_ready(self) -> None:
         self._connection._unpatched_inventory = self.user.inventory
-        self.http.user = ClientUser(self._connection, self.http.get_user(self.user.id64))  # type: ignore
+        self.http.user = ClientUser(self._connection, await self.http.get_user(self.user.id64))
         super()._handle_ready()
 
     if TYPE_CHECKING:
