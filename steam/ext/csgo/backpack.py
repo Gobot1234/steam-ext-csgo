@@ -24,6 +24,7 @@ class BackpackItem(Item):
     """A class to represent an item from the client's backpack."""
 
     __slots__ = (
+        "_state",
         "position",
         "casket_id",
         "paint_index",
