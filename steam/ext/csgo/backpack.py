@@ -38,7 +38,7 @@ class BackpackItem(Item):
     REPR_ATTRS = (*Item.REPR_ATTRS, "position")
 
     position: int
-    casket_id: int
+    casket_id: int | None
     paint_index: float
     paint_seed: float
     paint_wear: float
@@ -67,6 +67,7 @@ class BackpackItem(Item):
     def __init__(self, item: Item, *, _state: GCState | None = None):  # noqa
         utils.update_class(item, self)
         self._state = _state
+        self.casket_id = None
 
     async def rename_to(self, name: str, tag: BackpackItem):
         ...
@@ -80,7 +81,7 @@ class BackpackItem(Item):
     async def remove_from(self, casket: BackpackItem):
         ...
 
-    async def contents(self):
+    async def contents(self) -> list[BackpackItem]:
         if not self.casket_contained_item_count:
             return []
 
@@ -108,6 +109,8 @@ class BackpackItem(Item):
 
 class Backpack(BaseInventory[BackpackItem]):
     """A class to represent the client's backpack."""
+
+    __slots__ = ()
 
     def __init__(self, inventory: Inventory):  # noqa
         utils.update_class(inventory, self)
