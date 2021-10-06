@@ -4,6 +4,7 @@ import asyncio
 import logging
 import math
 import struct
+import sys
 from collections.abc import Callable, Coroutine
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -41,6 +42,7 @@ class GCState(ConnectionState):
         self.backpack: Backpack = None  # type: ignore
         self._gc_connected = asyncio.Event()
         self._gc_ready = asyncio.Event()
+        self.casket_items = set()
 
     def _store_user(self, data: UserDict) -> User:
         try:
@@ -112,59 +114,62 @@ class GCState(ConnectionState):
 
         self.client.user.__class__.inventory = inventory
 
+    def set(self, name: str, value: Any) -> None:
+        # would be nice if this was a macro
+        locals = sys._getframe(1).f_locals
+        item = locals["item"]
+        if item is not None:
+            setattr(item, name, value)
+        if locals["is_casket_item"]:
+            setattr(locals["cso_item"], name, value)
+
     async def update_backpack(self, *cso_items: base.Item, is_cache_subscribe: bool = False) -> Backpack:
         await self.client.wait_until_ready()
 
         backpack: Backpack = self.backpack or Backpack(await self._unpatched_inventory(CSGO))
-        item_ids = [item.asset_id for item in backpack]
 
-        if any(cso_item.id not in item_ids for cso_item in cso_items):
-            try:
-                await backpack.update()
-            except HTTPException:
-                await asyncio.sleep(30)
-
-        items = []
         for cso_item in cso_items:  # merge the two items
             item = utils.get(backpack, asset_id=cso_item.id)
+            is_casket_item = False
             if item is None:
-                continue  # the item has been removed (gc sometimes sends you items that you have crafted/deleted)
-            for attribute_name in cso_item.__annotations__:
-                setattr(item, attribute_name, getattr(cso_item, attribute_name))
-
-            is_new = is_cache_subscribe and (cso_item.inventory >> 30) & 1
-            item.position = 0 if is_new else cso_item.inventory & 0xFFFF
-
-            # is the item contained in a casket?
-            casket_id_low = utils.get(cso_item.attribute, def_index=272)
-            casket_id_high = utils.get(cso_item.attribute, def_index=273)
-            if casket_id_low and casket_id_high:
-                item.casket_id = int(
+                # is the item contained in a casket?
+                casket_id_low = utils.get(cso_item.attribute, def_index=272)
+                casket_id_high = utils.get(cso_item.attribute, def_index=273)
+                if not casket_id_low or not casket_id_high:
+                    continue  # the item has been removed (gc sometimes sends you items that you have crafted/deleted)
+                is_casket_item = True
+                cso_item.casket_id = int(
                     f"{READ_U32(casket_id_low.value_bytes)[0]:032b}{READ_U32(casket_id_high.value_bytes)[0]:032b}",
                     base=2,
                 )
+            else:
+                for attribute_name in cso_item.__annotations__:
+                    setattr(item, attribute_name, getattr(cso_item, attribute_name))
+
+            is_new = is_cache_subscribe and (cso_item.inventory >> 30) & 1
+            self.set("position", 0 if is_new else cso_item.inventory & 0xFFFF)
 
             custom_name = utils.get(cso_item.attribute, def_index=111)
-            if custom_name and not item.custom_name:
-                item.custom_name = custom_name.value_bytes[2:].decode("utf-8")
+            if custom_name:
+                self.set("custom_name", custom_name.value_bytes[2:].decode("utf-8"))
 
             paint_index = utils.get(cso_item.attribute, def_index=6)
             if paint_index:
-                item.paint_index = READ_F32(paint_index.value_bytes)[0]
+                self.set("paint_index", READ_F32(paint_index.value_bytes)[0])
 
             paint_seed = utils.get(cso_item.attribute, def_index=7)
             if paint_seed:
-                item.paint_seed = math.floor(READ_F32(paint_seed.value_bytes)[0])
+                self.set("paint_seed", math.floor(READ_F32(paint_seed.value_bytes)[0]))
 
             paint_wear = utils.get(cso_item.attribute, def_index=8)
             if paint_wear:
-                item.paint_wear = READ_F32(paint_wear.value_bytes)[0]
+                self.set("paint_wear", READ_F32(paint_wear.value_bytes)[0])
 
             tradable_after_date = utils.get(cso_item.attribute, def_index=75)
             if tradable_after_date:
-                item.tradable_after = datetime.utcfromtimestamp(READ_U32(tradable_after_date.value_bytes)[0])
+                self.set("tradable_after", datetime.utcfromtimestamp(READ_U32(tradable_after_date.value_bytes)[0]))
 
-            item.stickers = []
+            self.set("stickers", [])
             attrs = Sticker._get_attrs()
             for i in range(1, 6):
                 sticker_id = utils.get(cso_item.attribute, def_index=113 + (i * 4))
@@ -179,13 +184,13 @@ class GCState(ConnectionState):
                     item.stickers.append(sticker)
 
             if item.def_index == 1201:  # storage unit
-                item.casket_contained_item_count = 0
+                self.set("casket_contained_item_count", 0)
                 item_count = utils.get(cso_item.attribute, def_index=270)
                 if item_count:
-                    item.casket_contained_item_count = READ_U32(item_count.value_bytes)[0]
+                    self.set("casket_contained_item_count", READ_U32(item_count.value_bytes)[0])
 
-            if not is_cache_subscribe:
-                items.append(item)
+            if is_casket_item:
+                self.casket_items.add(cso_item)
 
         self.patch_user_inventory(backpack)
         self.backpack = backpack
@@ -230,7 +235,10 @@ class GCState(ConnectionState):
             return  # Not an item
 
         cso_item = base.Item().parse(msg.body.object_data)
-        item = await self.update_backpack(cso_item)
+        backpack = await self.update_backpack(cso_item)
+        if cso_item.casket_id:
+            return log.debug("Received a casket item", cso_item)
+        item = utils.get(backpack, asset_id=cso_item.id)
         if item is None:
             return log.info("Received an item that isn't our inventory %r", cso_item)
         self.dispatch("item_receive", item)

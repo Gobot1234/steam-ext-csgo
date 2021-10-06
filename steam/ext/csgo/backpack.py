@@ -85,8 +85,8 @@ class BackpackItem(Item):
         if not self.casket_contained_item_count:
             return []
 
-        contained_items = [item for item in self._state.backpack if item.casket_id == self.id]
-        if len(contained_items) != self.casket_contained_item_count:
+        contained_items = [item for item in self._state.casket_items if item.casket_id == self.id]
+        if len(contained_items) == self.casket_contained_item_count:
             return contained_items
 
         await self._state.ws.send_gc_message(
@@ -97,7 +97,7 @@ class BackpackItem(Item):
             check=lambda n: n.items[0] == self.id and n.type == ItemCustomizationNotification.CasketContents,
             timeout=30,
         )
-        return [item for item in self._state.backpack if item.casket_id == self.id]
+        return [item for item in self._state.casket_items if item.casket_id == self.id]
 
     async def inspect(
         self,
