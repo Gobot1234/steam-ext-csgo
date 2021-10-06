@@ -74,7 +74,7 @@ class ClientUser(BaseUser, user.ClientUser):
 
 
 class ProfileInfo:
-    def __init__(self, proto: cstrike.PlayersProfile):
+    def __init__(self, proto: cstrike.MatchmakingClientHello):
         self.in_match = proto.ongoingmatch
         self.global_stats = proto.global_stats
         self.penalty_seconds = proto.penalty_seconds
@@ -90,7 +90,7 @@ class ProfileInfo:
         self.survey_vote = proto.survey_vote
         self.activity = proto.activity
         self.current_xp = proto.player_cur_xp
-        self.player_level = proto.player_level
+        self.level = proto.player_level
         self.xp_bonus_flags = proto.player_xp_bonus_flags
         self.rankings = proto.rankings
 

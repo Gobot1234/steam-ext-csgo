@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 from typing_extensions import ClassVar
@@ -8,6 +9,7 @@ from ... import utils
 from ...client import Client
 from ...ext import commands
 from ...game import CSGO, Game
+from .enums import Language
 from .models import ClientUser, User
 from .state import GCState
 
@@ -15,6 +17,8 @@ __all__ = (
     "Client",
     "Bot",
 )
+
+from ...protobufs import GCMsgProto
 
 
 class Client(Client):
@@ -36,6 +40,18 @@ class Client(Client):
 
     def _get_state(self, **options: Any) -> GCState:
         return GCState(client=self, **options)
+
+    async def connect(self):
+        async def ping():
+            await self.wait_until_ready()
+            while True:
+                await self.ws.send_gc_message(GCMsgProto(Language.ClientHello))
+                await asyncio.sleep(30)
+
+        await asyncio.gather(
+            super().connect(),
+            ping(),
+        )
 
     async def _handle_ready(self) -> None:
         self._connection._unpatched_inventory = self.user.inventory

@@ -8,6 +8,7 @@ PROTOBUFS.update(
         Language.ClientConnectionStatus: gcsdk.ConnectionStatus,
         Language.ClientRequestWatchInfoFriends2: cstrike.ClientRequestWatchInfoFriends,
         Language.ClientWelcome: gcsdk.ClientWelcome,
+        Language.ClientHello: gcsdk.ClientHello,
         Language.MatchmakingGC2ClientHello: cstrike.MatchmakingClientHello,
         Language.MatchList: cstrike.MatchList,
         Language.PlayersProfile: cstrike.PlayersProfile,

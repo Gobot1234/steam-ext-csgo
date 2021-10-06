@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from ... import utils
 from ...abc import SteamID
 from ...protobufs import GCMsgProto
-from ...trade import BaseInventory, Item
+from ...trade import BaseInventory, Inventory, Item
 from .enums import ItemCustomizationNotification, Language
 from .models import Sticker
 from .protobufs.base import Item as ProtoItem, ItemAttribute, ItemEquipped

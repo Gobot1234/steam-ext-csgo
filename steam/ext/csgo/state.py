@@ -39,8 +39,8 @@ class GCState(ConnectionState):
         super().__init__(client, **kwargs)
         self._unpatched_inventory: Callable[[Game], Coroutine[None, None, Inventory]] = None  # type: ignore
         self.backpack: Backpack = None  # type: ignore
-        self._connected = asyncio.Event()
         self._gc_connected = asyncio.Event()
+        self._gc_ready = asyncio.Event()
 
     def _store_user(self, data: UserDict) -> User:
         try:
@@ -80,14 +80,16 @@ class GCState(ConnectionState):
 
     @register(Language.ClientWelcome)
     def parse_gc_client_connect(self, _) -> None:
-        if not self._connected.is_set():
+        if not self._gc_connected.is_set():
             self.dispatch("gc_connect")
-            self._connected.set()
+            self._gc_connected.set()
 
-    # @register(Language.ClientGoodbye)
-    def parse_client_goodbye(self, _=None) -> None:
-        self.dispatch("gc_disconnect")
-        self._connected.clear()
+    @register(Language.ClientConnectionStatus)
+    def parse_client_goodbye(self, msg: GCMsgProto[gcsdk.ConnectionStatus] | None = None) -> None:
+        if msg is None or msg.body.status == gcsdk.GcConnectionStatus.NoSession:
+            self.dispatch("gc_disconnect")
+            self._gc_connected.clear()
+            self._gc_ready.clear()
 
     @register(Language.ClientWelcome)
     async def parse_gc_client_connect(self, msg: GCMsgProto[gcsdk.ClientWelcome]) -> None:
@@ -97,8 +99,8 @@ class GCState(ConnectionState):
                     await self.update_backpack(*(base.Item().parse(item_data) for item_data in cache.object_data))
                 else:
                     log.debug(f"Unknown item {cache!r} updated")
-        if self._connected.is_set():
-            self._gc_connected.set()
+        if not self._gc_ready.is_set():
+            self._gc_ready.set()
             self.dispatch("gc_ready")
 
     def patch_user_inventory(self, new_backpack: Backpack) -> None:
