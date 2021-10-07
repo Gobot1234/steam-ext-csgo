@@ -237,7 +237,7 @@ class GCState(ConnectionState):
         cso_item = base.Item().parse(msg.body.object_data)
         backpack = await self.update_backpack(cso_item)
         if cso_item.casket_id:
-            return log.debug("Received a casket item", cso_item)
+            return log.debug("Received a casket item %r", cso_item)
         item = utils.get(backpack, asset_id=cso_item.id)
         if item is None:
             return log.info("Received an item that isn't our inventory %r", cso_item)
