@@ -100,7 +100,7 @@ class BackpackItem(Item):
             timeout=30,
         )
         contained_items = []
-        for item_id in notification.item_id:
+        for item_id in notification.item_id[1:]:
             while True:
                 try:
                     contained_items.append(self._state.casket_items[item_id])
