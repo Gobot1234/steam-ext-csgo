@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -7,9 +8,10 @@ from ... import utils
 from ...abc import SteamID
 from ...protobufs import GCMsgProto
 from ...trade import BaseInventory, Inventory, Item
-from .enums import ItemCustomizationNotification, Language
+from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum, Language
 from .models import Sticker
 from .protobufs.base import Item as ProtoItem, ItemAttribute, ItemEquipped
+from .protobufs.econ import ItemCustomizationNotification as ItemCustomizationNotificationProto
 
 if TYPE_CHECKING:
     from .state import GCState
@@ -81,7 +83,7 @@ class BackpackItem(Item):
     async def remove_from(self, casket: BackpackItem):
         ...
 
-    async def contents(self) -> list[BackpackItem]:
+    async def contents(self) -> list[ProtoItem]:
         if not self.casket_contained_item_count:
             return []
 
@@ -92,12 +94,21 @@ class BackpackItem(Item):
         await self._state.ws.send_gc_message(
             GCMsgProto(Language.CasketItemLoadContents, casket_item_id=self.id, item_item_id=self.id)
         )
-        await self._state.client.wait_for(  # type: ignore
+        notification: ItemCustomizationNotificationProto = await self._state.client.wait_for(  # type: ignore
             "item_customization_notification",
-            check=lambda n: n.item_id[0] == self.id and n.request == ItemCustomizationNotification.CasketContents,
+            check=lambda n: n.item_id[0] == self.id and n.request == ItemCustomizationNotificationEnum.CasketContents,
             timeout=30,
         )
-        return [item for item in self._state.casket_items.values() if item.casket_id == self.id]
+        contained_items = []
+        for item_id in notification.item_id:
+            while True:
+                try:
+                    contained_items.append(self._state.casket_items[item_id])
+                except KeyError:  # not been added by SOCreate yet
+                    await asyncio.sleep(0)  # yield back to the event loop to let the parser add this
+                else:
+                    break
+        return contained_items
 
     async def inspect(
         self,
