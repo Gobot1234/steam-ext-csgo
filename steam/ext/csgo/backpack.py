@@ -69,6 +69,9 @@ class BackpackItem(Item):
         self._state = _state
         self.casket_id = None
 
+    def __hash__(self):
+        return hash(self.id)
+
     async def rename_to(self, name: str, tag: BackpackItem):
         ...
 
