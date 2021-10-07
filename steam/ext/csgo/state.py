@@ -42,7 +42,7 @@ class GCState(ConnectionState):
         self.backpack: Backpack = None  # type: ignore
         self._gc_connected = asyncio.Event()
         self._gc_ready = asyncio.Event()
-        self.casket_items = set()
+        self.casket_items: dict[int, base.Item] = {}
 
     def _store_user(self, data: UserDict) -> User:
         try:
@@ -190,7 +190,7 @@ class GCState(ConnectionState):
                     self.set("casket_contained_item_count", READ_U32(item_count.value_bytes)[0])
 
             if is_casket_item:
-                self.casket_items.add(cso_item)
+                self.casket_items[cso_item.id] = cso_item
 
         self.patch_user_inventory(backpack)
         self.backpack = backpack

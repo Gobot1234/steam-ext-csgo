@@ -69,9 +69,6 @@ class BackpackItem(Item):
         self._state = _state
         self.casket_id = None
 
-    def __hash__(self):
-        return hash(self.id)
-
     async def rename_to(self, name: str, tag: BackpackItem):
         ...
 
@@ -88,7 +85,7 @@ class BackpackItem(Item):
         if not self.casket_contained_item_count:
             return []
 
-        contained_items = [item for item in self._state.casket_items if item.casket_id == self.id]
+        contained_items = [item for item in self._state.casket_items.values() if item.casket_id == self.id]
         if len(contained_items) == self.casket_contained_item_count:
             return contained_items
 
@@ -100,7 +97,7 @@ class BackpackItem(Item):
             check=lambda n: n.item_id[0] == self.id and n.request == ItemCustomizationNotification.CasketContents,
             timeout=30,
         )
-        return [item for item in self._state.casket_items if item.casket_id == self.id]
+        return [item for item in self._state.casket_items.values() if item.casket_id == self.id]
 
     async def inspect(
         self,
