@@ -183,7 +183,7 @@ class GCState(ConnectionState):
 
                     item.stickers.append(sticker)
 
-            if item.def_index == 1201:  # storage unit
+            if cso_item.def_index == 1201:  # storage unit
                 self.set("casket_contained_item_count", 0)
                 item_count = utils.get(cso_item.attribute, def_index=270)
                 if item_count:
@@ -227,7 +227,7 @@ class GCState(ConnectionState):
         if not msg.body.item_id or not msg.body.request:
             return
 
-        self.dispatch("item_customization_notification", msg.body.item_id, msg.body.request)
+        self.dispatch("item_customization_notification", msg.body)
 
     @register(Language.SOCreate)
     async def handle_so_create(self, msg: GCMsgProto[gcsdk.SingleObject]):

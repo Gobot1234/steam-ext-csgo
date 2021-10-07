@@ -94,7 +94,7 @@ class BackpackItem(Item):
         )
         await self._state.client.wait_for(  # type: ignore
             "item_customization_notification",
-            check=lambda n: n.items[0] == self.id and n.type == ItemCustomizationNotification.CasketContents,
+            check=lambda n: n.item_id[0] == self.id and n.request == ItemCustomizationNotification.CasketContents,
             timeout=30,
         )
         return [item for item in self._state.casket_items if item.casket_id == self.id]
