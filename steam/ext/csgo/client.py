@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import Any
+from typing import TYPE_CHECKING
 
 from typing_extensions import ClassVar
 
 from ... import utils
 from ...client import Client as Client_
 from ...ext import commands
-from ...game import CSGO, Game
+from ...game import CSGO
+from ...game import Game
 from .enums import Language
-from .models import ClientUser, User
+from .models import ClientUser
+from .models import User
 from .state import GCState
 
 __all__ = (
