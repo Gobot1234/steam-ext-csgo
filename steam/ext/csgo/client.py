@@ -44,7 +44,7 @@ class Client(Client_):
     async def connect(self):
         async def ping():
             await self.wait_until_ready()
-            while True:
+            while not self.is_closed():
                 await self.ws.send_gc_message(GCMsgProto(Language.ClientHello))
                 await asyncio.sleep(30)
 
