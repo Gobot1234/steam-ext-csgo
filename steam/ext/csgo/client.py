@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import ClassVar
 
 from ... import utils
-from ...client import Client
+from ...client import Client as Client_
 from ...ext import commands
 from ...game import CSGO, Game
 from .enums import Language
@@ -21,7 +21,7 @@ __all__ = (
 from ...protobufs import GCMsgProto
 
 
-class Client(Client):
+class Client(Client_):
     GAME: ClassVar = CSGO
     user: ClientUser
 
