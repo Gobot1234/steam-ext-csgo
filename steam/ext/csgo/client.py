@@ -58,7 +58,8 @@ class Client(Client_):
 
     async def _handle_ready(self) -> None:
         self._connection._unpatched_inventory = self.user.inventory
-        self.http.user = ClientUser(self._connection, await self.http.get_user(self.user.id64))
+        self.http.user = ClientUser(self._connection, await
+                                    self.http.get_user(self.user.id64))
         await super()._handle_ready()
 
     if TYPE_CHECKING:
