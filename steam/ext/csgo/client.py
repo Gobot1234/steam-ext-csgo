@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import ClassVar
 
 from ... import utils
-from ...client import Client
+from ...client import Client as Client_
 from ...ext import commands
 from ...game import CSGO, Game
 from .enums import Language
@@ -21,7 +21,7 @@ __all__ = (
 from ...protobufs import GCMsgProto
 
 
-class Client(Client):
+class Client(Client_):
     GAME: ClassVar = CSGO
     user: ClientUser
 
@@ -44,7 +44,7 @@ class Client(Client):
     async def connect(self):
         async def ping():
             await self.wait_until_ready()
-            while True:
+            while not self.is_closed():
                 await self.ws.send_gc_message(GCMsgProto(Language.ClientHello))
                 await asyncio.sleep(30)
 
