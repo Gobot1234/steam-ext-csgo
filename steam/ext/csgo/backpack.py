@@ -110,12 +110,21 @@ class BackpackItem(Item):
                     break
         return contained_items
 
-    async def inspect(
-        self,
-        owner: SteamID,
-        d: str,
-    ):
-        ...
+    @property
+    def inspect_url(self) -> str | None:
+        """
+        Get inspect url of item if it `inspectable` or None
+        :return: str or None
+        """
+        try:
+            for action in self.actions or []:
+                if "inspect" in action["name"].lower():
+                    return (action["link"]
+                            .replace('%owner_steamid%', str(self._state.client.user.id64))
+                            .replace('%assetid%', str(self.id)))
+
+        except (ValueError, KeyError):
+            return None
 
 
 class Backpack(BaseInventory[BackpackItem]):
