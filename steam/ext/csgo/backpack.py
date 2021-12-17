@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from ... import utils
-from ...abc import SteamID
+from ...utils import make_id64
 from ...protobufs import GCMsgProto
 from ...trade import BaseInventory, Inventory, Item
 from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum, Language
@@ -113,14 +113,14 @@ class BackpackItem(Item):
     @property
     def inspect_url(self) -> str | None:
         """
-        Get inspect url of item if it `inspectable` or None
-        :return: str or None
+        Get inspect url of item if it `inspectable`
+        :return: Inspect url or None
         """
         try:
             for action in self.actions or []:
                 if "inspect" in action["name"].lower():
                     return (action["link"]
-                            .replace('%owner_steamid%', str(self._state.client.user.id64))
+                            .replace('%owner_steamid%', str(make_id64(self.account_id)))
                             .replace('%assetid%', str(self.id)))
 
         except (ValueError, KeyError):

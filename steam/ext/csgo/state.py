@@ -216,10 +216,9 @@ class GCState(ConnectionState):
     @register(Language.Client2GCEconPreviewDataBlockResponse)
     def handle_client_preview_data_block_response(self, msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse]):
         # decode the wear
-        with utils.StructIO() as io:
-            io.write_u32(msg.body.iteminfo.paintwear)
-            item = utils.get(self.backpack, id=msg.body.iteminfo.itemid)
-            item.paint_wear = io.read_f32()
+        item = msg.body.iteminfo
+        packed_wear = struct.pack(">l", msg.body.iteminfo.paintwear)
+        item.paintwear = struct.unpack(">f", packed_wear)[0]
         self.dispatch("inspect_item_info", item)
 
     @register(Language.ItemCustomizationNotification)
