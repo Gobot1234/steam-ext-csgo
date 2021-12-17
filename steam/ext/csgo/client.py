@@ -63,7 +63,7 @@ class Client(Client_):
         await super()._handle_ready()
 
     @overload
-    async def inspect_item(self, *, owner: Type[SteamID], asset_id: int, d: int) -> PreviewDataBlock:
+    async def inspect_item(self, *, owner: SteamID, asset_id: int, d: int) -> PreviewDataBlock:
         ...
 
     @overload
@@ -113,13 +113,15 @@ class Client(Client_):
         if s == 0 and m == 0:
             raise TypeError(f"Missing required keyword-only argument: {'s' if not s else 'm'}")
 
-        params = {
-            'param_s': s,
-            'param_a': a,
-            'param_d': d,
-            'param_m': m,
-        }
-        await self.ws.send_gc_message(GCMsgProto(Language.Client2GCEconPreviewDataBlockRequest, **params))
+        await self.ws.send_gc_message(
+            GCMsgProto(
+                    Language.Client2GCEconPreviewDataBlockRequest,
+                    param_s=s,
+                    param_a=a
+                    param_d=d,
+                    param_m=m,
+                )
+        )
 
         return await self.wait_for(
             "inspect_item_info",
