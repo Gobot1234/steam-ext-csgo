@@ -117,7 +117,7 @@ class BackpackItem(Item):
         :return: Inspect url or None
         """
         try:
-            for action in self.actions or []:
+            for action in self.actions:
                 if "inspect" in action["name"].lower():
                     return (action["link"]
                             .replace('%owner_steamid%', str(make_id64(self.account_id)))
