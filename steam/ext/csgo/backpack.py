@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from typing import TYPE_CHECKING
-  
+
 from ... import utils
 from ...utils import make_id64
 from ...protobufs import GCMsgProto
@@ -87,12 +87,14 @@ class BackpackItem(Item):
         if not self.casket_contained_item_count:
             return []
 
-        contained_items = [item for item in self._state.casket_items.values() if item.casket_id == self.id]
+        contained_items = [
+            item for item in self._state.casket_items.values() if item.casket_id == self.id]
         if len(contained_items) == self.casket_contained_item_count:
             return contained_items
 
         await self._state.ws.send_gc_message(
-            GCMsgProto(Language.CasketItemLoadContents, casket_item_id=self.id, item_item_id=self.id)
+            GCMsgProto(Language.CasketItemLoadContents,
+                       casket_item_id=self.id, item_item_id=self.id)
         )
         notification: ItemCustomizationNotificationProto = await self._state.client.wait_for(  # type: ignore
             "item_customization_notification",
@@ -105,7 +107,8 @@ class BackpackItem(Item):
                 try:
                     contained_items.append(self._state.casket_items[item_id])
                 except KeyError:  # not been added by SOCreate yet
-                    await asyncio.sleep(0)  # yield back to the event loop to let the parser add this
+                    # yield back to the event loop to let the parser add this
+                    await asyncio.sleep(0)
                 else:
                     break
         return contained_items
@@ -134,8 +137,10 @@ class Backpack(BaseInventory[BackpackItem]):
 
     def __init__(self, inventory: Inventory):  # noqa
         utils.update_class(inventory, self)
-        self.items = [BackpackItem(item, _state=self._state) for item in inventory.items]  # type: ignore
+        self.items = [BackpackItem(item, _state=self._state)
+                      for item in inventory.items]  # type: ignore
 
     async def update(self) -> None:
         await super().update()
-        self.items = [BackpackItem(item, _state=self._state) for item in self.items]  # type: ignore
+        self.items = [BackpackItem(item, _state=self._state)
+                      for item in self.items]  # type: ignore

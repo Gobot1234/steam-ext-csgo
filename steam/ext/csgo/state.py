@@ -38,7 +38,8 @@ class GCState(ConnectionState):
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
-        self._unpatched_inventory: Callable[[Game], Coroutine[None, None, Inventory]] = None  # type: ignore
+        self._unpatched_inventory: Callable[[
+            Game], Coroutine[None, None, Inventory]] = None  # type: ignore
         self.backpack: Backpack = None  # type: ignore
         self._gc_connected = asyncio.Event()
         self._gc_ready = asyncio.Event()
@@ -75,7 +76,8 @@ class GCState(ConnectionState):
         except Exception as exc:
             return log.error(f"Failed to deserialize message: {language!r}, {msg.body.payload!r}", exc_info=exc)
         else:
-            log.debug(f"Socket has received GC message %r from the websocket.", msg)
+            log.debug(
+                f"Socket has received GC message %r from the websocket.", msg)
 
         self.dispatch("gc_message_receive", msg)
         self.run_parser(language, msg)
@@ -136,7 +138,8 @@ class GCState(ConnectionState):
                 casket_id_low = utils.get(cso_item.attribute, def_index=272)
                 casket_id_high = utils.get(cso_item.attribute, def_index=273)
                 if not casket_id_low or not casket_id_high:
-                    continue  # the item has been removed (gc sometimes sends you items that you have crafted/deleted)
+                    # the item has been removed (gc sometimes sends you items that you have crafted/deleted)
+                    continue
                 is_casket_item = True
                 cso_item.casket_id = int(
                     f"{READ_U32(casket_id_low.value_bytes)[0]:032b}{READ_U32(casket_id_high.value_bytes)[0]:032b}",
@@ -144,14 +147,16 @@ class GCState(ConnectionState):
                 )
             else:
                 for attribute_name in cso_item.__annotations__:
-                    setattr(item, attribute_name, getattr(cso_item, attribute_name))
+                    setattr(item, attribute_name, getattr(
+                        cso_item, attribute_name))
 
             is_new = is_cache_subscribe and (cso_item.inventory >> 30) & 1
             self.set("position", 0 if is_new else cso_item.inventory & 0xFFFF)
 
             custom_name = utils.get(cso_item.attribute, def_index=111)
             if custom_name:
-                self.set("custom_name", custom_name.value_bytes[2:].decode("utf-8"))
+                self.set("custom_name",
+                         custom_name.value_bytes[2:].decode("utf-8"))
 
             paint_index = utils.get(cso_item.attribute, def_index=6)
             if paint_index:
@@ -159,7 +164,8 @@ class GCState(ConnectionState):
 
             paint_seed = utils.get(cso_item.attribute, def_index=7)
             if paint_seed:
-                self.set("paint_seed", math.floor(READ_F32(paint_seed.value_bytes)[0]))
+                self.set("paint_seed", math.floor(
+                    READ_F32(paint_seed.value_bytes)[0]))
 
             paint_wear = utils.get(cso_item.attribute, def_index=8)
             if paint_wear:
@@ -167,19 +173,24 @@ class GCState(ConnectionState):
 
             tradable_after_date = utils.get(cso_item.attribute, def_index=75)
             if tradable_after_date:
-                self.set("tradable_after", datetime.utcfromtimestamp(READ_U32(tradable_after_date.value_bytes)[0]))
+                self.set("tradable_after", datetime.utcfromtimestamp(
+                    READ_U32(tradable_after_date.value_bytes)[0]))
 
             self.set("stickers", [])
             attrs = Sticker._get_attrs()
             for i in range(1, 6):
-                sticker_id = utils.get(cso_item.attribute, def_index=113 + (i * 4))
+                sticker_id = utils.get(
+                    cso_item.attribute, def_index=113 + (i * 4))
                 if sticker_id:
-                    sticker = Sticker(slot=i, sticker_id=READ_U32(sticker_id.value_bytes)[0])
+                    sticker = Sticker(slot=i, sticker_id=READ_U32(
+                        sticker_id.value_bytes)[0])
 
                     for idx, attr in enumerate(attrs):
-                        attribute = utils.get(item.attribute, def_index=114 + (i * 4) + idx)
+                        attribute = utils.get(
+                            item.attribute, def_index=114 + (i * 4) + idx)
                         if attribute:
-                            setattr(sticker, attribute, READ_F32(attribute.value_bytes)[0])
+                            setattr(sticker, attribute, READ_F32(
+                                attribute.value_bytes)[0])
 
                     item.stickers.append(sticker)
 
@@ -187,7 +198,8 @@ class GCState(ConnectionState):
                 self.set("casket_contained_item_count", 0)
                 item_count = utils.get(cso_item.attribute, def_index=270)
                 if item_count:
-                    self.set("casket_contained_item_count", READ_U32(item_count.value_bytes)[0])
+                    self.set("casket_contained_item_count",
+                             READ_U32(item_count.value_bytes)[0])
 
             if is_casket_item:
                 self.casket_items[cso_item.id] = cso_item
@@ -251,7 +263,8 @@ class GCState(ConnectionState):
         for object in msg.body.objects_modified:
             await self._handle_so_update(object)  # type: ignore
 
-    async def _handle_so_update(self, object: gcsdk.SingleObject):  # this should probably be a protocol
+    # this should probably be a protocol
+    async def _handle_so_update(self, object: gcsdk.SingleObject):
         if object.type_id != 1:
             return log.debug("Unknown item %r updated", object)
 
@@ -273,6 +286,7 @@ class GCState(ConnectionState):
         if item is None:
             return log.info("Received an item that isn't our inventory %r", deleted_item)
         for attribute_name in deleted_item.__annotations__:
-            setattr(item, attribute_name, getattr(deleted_item, attribute_name))
+            setattr(item, attribute_name, getattr(
+                deleted_item, attribute_name))
         self.backpack.items.remove(item)  # type: ignore
         self.dispatch("item_remove", item)

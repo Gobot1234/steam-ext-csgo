@@ -91,7 +91,8 @@ class Client(Client_):
         if url:
             try:
                 search = re.search(r'[SM](\d+)A(\d+)D(\d+)$', url)
-                owner = SteamID(int(search[1]) if search[0].startswith("S") else 0)
+                owner = SteamID(
+                    int(search[1]) if search[0].startswith("S") else 0)
                 market_id = int(search[1]) if search[0].startswith("M") else 0
                 asset_id = int(search[2])
                 d = int(search[3])
@@ -99,18 +100,20 @@ class Client(Client_):
                 raise ValueError("Inspect url is invalid")
 
         elif owner is None and market_id == 0:
-            raise TypeError(f"Missing required keyword-only argument: 'owner' or 'market_id'")
+            raise TypeError(
+                f"Missing required keyword-only argument: 'owner' or 'market_id'")
         elif d == 0 or asset_id == 0:
-            raise TypeError(f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
+            raise TypeError(
+                f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
 
         await self.ws.send_gc_message(
             GCMsgProto(
-                    Language.Client2GCEconPreviewDataBlockRequest,
-                    param_s=owner.id64 if owner else 0,
-                    param_a=asset_id,
-                    param_d=d,
-                    param_m=market_id,
-                )
+                Language.Client2GCEconPreviewDataBlockRequest,
+                param_s=owner.id64 if owner else 0,
+                param_a=asset_id,
+                param_d=d,
+                param_m=market_id,
+            )
         )
 
         return await self.wait_for(
