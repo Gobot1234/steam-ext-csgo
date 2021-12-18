@@ -87,14 +87,12 @@ class BackpackItem(Item):
         if not self.casket_contained_item_count:
             return []
 
-        contained_items = [
-            item for item in self._state.casket_items.values() if item.casket_id == self.id]
+        contained_items = [item for item in self._state.casket_items.values() if item.casket_id == self.id]
         if len(contained_items) == self.casket_contained_item_count:
             return contained_items
 
         await self._state.ws.send_gc_message(
-            GCMsgProto(Language.CasketItemLoadContents,
-                       casket_item_id=self.id, item_item_id=self.id)
+            GCMsgProto(Language.CasketItemLoadContents, casket_item_id=self.id, item_item_id=self.id)
         )
         notification: ItemCustomizationNotificationProto = await self._state.client.wait_for(  # type: ignore
             "item_customization_notification",
@@ -122,9 +120,11 @@ class BackpackItem(Item):
         try:
             for action in self.actions:
                 if "inspect" in action["name"].lower():
-                    return (action["link"]
-                            .replace('%owner_steamid%', str(make_id64(self.account_id)))
-                            .replace('%assetid%', str(self.id)))
+                    return (
+                        action["link"]
+                        .replace("%owner_steamid%", str(make_id64(self.account_id)))
+                        .replace("%assetid%", str(self.id))
+                    )
 
         except (ValueError, KeyError):
             return None
@@ -137,10 +137,8 @@ class Backpack(BaseInventory[BackpackItem]):
 
     def __init__(self, inventory: Inventory):  # noqa
         utils.update_class(inventory, self)
-        self.items = [BackpackItem(item, _state=self._state)
-                      for item in inventory.items]  # type: ignore
+        self.items = [BackpackItem(item, _state=self._state) for item in inventory.items]  # type: ignore
 
     async def update(self) -> None:
         await super().update()
-        self.items = [BackpackItem(item, _state=self._state)
-                      for item in self.items]  # type: ignore
+        self.items = [BackpackItem(item, _state=self._state) for item in self.items]  # type: ignore

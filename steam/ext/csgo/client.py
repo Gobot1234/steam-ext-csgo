@@ -75,13 +75,13 @@ class Client(Client_):
         ...
 
     async def inspect_item(
-            self,
-            *,
-            owner: SteamID | None = None,
-            asset_id: int = 0,
-            d: int = 0,
-            market_id: int = 0,
-            url: str = "",
+        self,
+        *,
+        owner: SteamID | None = None,
+        asset_id: int = 0,
+        d: int = 0,
+        market_id: int = 0,
+        url: str = "",
     ) -> PreviewDataBlock:
         """
         The parameters can be taken from `inspect` links either from an inventory or market.
@@ -90,9 +90,8 @@ class Client(Client_):
 
         if url:
             try:
-                search = re.search(r'[SM](\d+)A(\d+)D(\d+)$', url)
-                owner = SteamID(
-                    int(search[1]) if search[0].startswith("S") else 0)
+                search = re.search(r"[SM](\d+)A(\d+)D(\d+)$", url)
+                owner = SteamID(int(search[1]) if search[0].startswith("S") else 0)
                 market_id = int(search[1]) if search[0].startswith("M") else 0
                 asset_id = int(search[2])
                 d = int(search[3])
@@ -100,11 +99,9 @@ class Client(Client_):
                 raise ValueError("Inspect url is invalid")
 
         elif owner is None and market_id == 0:
-            raise TypeError(
-                f"Missing required keyword-only argument: 'owner' or 'market_id'")
+            raise TypeError(f"Missing required keyword-only argument: 'owner' or 'market_id'")
         elif d == 0 or asset_id == 0:
-            raise TypeError(
-                f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
+            raise TypeError(f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
 
         await self.ws.send_gc_message(
             GCMsgProto(
@@ -116,11 +113,7 @@ class Client(Client_):
             )
         )
 
-        return await self.wait_for(
-            "inspect_item_info",
-            timeout=60.0,
-            check=lambda item: item.itemid == asset_id
-        )
+        return await self.wait_for("inspect_item_info", timeout=60.0, check=lambda item: item.itemid == asset_id)
 
     if TYPE_CHECKING:
 
