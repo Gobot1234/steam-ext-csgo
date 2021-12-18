@@ -22,14 +22,18 @@ class Sticker:
 
     slot: Literal[1, 2, 3, 4, 5]  # TODO: enum these
     id: int
-    wear: float | None
-    scale: float | None
-    rotation: float | None
-    tint_id: float
+    wear: float | None = None
+    scale: float | None = None
+    rotation: float | None = None
+    tint_id: float | None = None
 
     @classmethod
     def _get_attrs(cls) -> list[str]:
-        return cls.__slots__[2:]  # the attributes to decode on
+        return (
+            "wear",
+            "scale",
+            "rotation",
+        )
 
 
 class BaseUser(abc.BaseUser):

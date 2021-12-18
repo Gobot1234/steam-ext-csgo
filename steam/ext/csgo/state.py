@@ -131,7 +131,7 @@ class GCState(GCState_):
             for i in range(1, 6):
                 sticker_id = utils.get(cso_item.attribute, def_index=113 + (i * 4))
                 if sticker_id:
-                    sticker = Sticker(slot=i, sticker_id=READ_U32(sticker_id.value_bytes)[0])
+                    sticker = Sticker(slot=i, id=READ_U32(sticker_id.value_bytes)[0])
 
                     for idx, attr in enumerate(attrs):
                         attribute = utils.get(item.attribute, def_index=114 + (i * 4) + idx)
