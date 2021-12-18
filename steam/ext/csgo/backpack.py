@@ -5,9 +5,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from ... import utils
-from ...utils import make_id64
 from ...protobufs import GCMsgProto
 from ...trade import BaseInventory, Inventory, Item
+from ...utils import make_id64
 from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum, Language
 from .models import Sticker
 from .protobufs.base import Item as ProtoItem, ItemAttribute, ItemEquipped

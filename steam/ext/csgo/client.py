@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING, Any, overload
 from typing_extensions import ClassVar
 
 from ... import utils
+from ...abc import SteamID
 from ...client import Client as Client_
 from ...ext import commands
 from ...game import CSGO, Game
-from ...abc import SteamID
 from .enums import Language
 from .models import ClientUser, User
-from .state import GCState
 from .protobufs.cstrike import PreviewDataBlock
+from .state import GCState
 
 __all__ = (
     "Client",
