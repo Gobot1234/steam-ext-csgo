@@ -1,7 +1,9 @@
-from steam.protobufs import PROTOBUFS
-
+from . import base
+from . import cstrike
+from . import econ
+from . import gcsdk
 from ..enums import Language
-from . import base, cstrike, econ, gcsdk
+from steam.protobufs import PROTOBUFS
 
 PROTOBUFS.update(
     {

@@ -6,11 +6,16 @@ from typing import TYPE_CHECKING
 
 from ... import utils
 from ...protobufs import GCMsgProto
-from ...trade import BaseInventory, Inventory, Item
+from ...trade import BaseInventory
+from ...trade import Inventory
+from ...trade import Item
 from ...utils import make_id64
-from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum, Language
+from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum
+from .enums import Language
 from .models import Sticker
-from .protobufs.base import Item as ProtoItem, ItemAttribute, ItemEquipped
+from .protobufs.base import Item as ProtoItem
+from .protobufs.base import ItemAttribute
+from .protobufs.base import ItemEquipped
 from .protobufs.econ import ItemCustomizationNotification as ItemCustomizationNotificationProto
 
 if TYPE_CHECKING:

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import TYPE_CHECKING, Any, overload
+from typing import Any
+from typing import overload
+from typing import TYPE_CHECKING
 
 from typing_extensions import ClassVar
 
@@ -10,9 +12,11 @@ from ... import utils
 from ...abc import SteamID
 from ...client import Client as Client_
 from ...ext import commands
-from ...game import CSGO, Game
+from ...game import CSGO
+from ...game import Game
 from .enums import Language
-from .models import ClientUser, User
+from .models import ClientUser
+from .models import User
 from .protobufs.cstrike import PreviewDataBlock
 from .state import GCState
 

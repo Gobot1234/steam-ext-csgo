@@ -5,23 +5,34 @@ import logging
 import math
 import struct
 import sys
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
+from collections.abc import Coroutine
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
+from typing import TYPE_CHECKING
 
 from ... import utils
 from ...abc import UserDict
 from ...errors import HTTPException
-from ...game import CSGO, Game
+from ...game import CSGO
+from ...game import Game
 from ...gateway import READ_U32
-from ...models import EventParser, register
-from ...protobufs import EMsg, GCMsg, GCMsgProto, MsgProto
+from ...models import EventParser
+from ...models import register
+from ...protobufs import EMsg
+from ...protobufs import GCMsg
+from ...protobufs import GCMsgProto
+from ...protobufs import MsgProto
 from ...state import ConnectionState
 from ...trade import Inventory
 from .backpack import Backpack
 from .enums import Language
-from .models import Sticker, User
-from .protobufs import base, cstrike, econ, gcsdk
+from .models import Sticker
+from .models import User
+from .protobufs import base
+from .protobufs import cstrike
+from .protobufs import econ
+from .protobufs import gcsdk
 
 if TYPE_CHECKING:
     from steam.protobufs.client_server_2 import CMsgGcClient
