@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -23,6 +24,7 @@ __all__ = (
 )
 
 
+@dataclass(repr=False)
 class Paint:
     index: float
     seed: float
@@ -68,11 +70,11 @@ class CasketItem(BaseItem):
     casket_id: int
 
 
+@dataclass(repr=False)
 class BaseInspectedItem:
     id: int
     def_index: int
     paint: Paint
-    position: int
     rarity: int
     quality: int
     kill_eater_score_type: int
@@ -86,8 +88,11 @@ class BaseInspectedItem:
     music_index: int
     ent_index: int
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} id={self.id}>"
 
-class InspectedItem(BaseItem, Item):
+
+class InspectedItem(Item, BaseInspectedItem):
     ...
 
 
@@ -169,6 +174,7 @@ class Casket(BackpackItem):
                 else:
                     break
         return contained_items  # type: ignore
+
 
 Backpack: TypeAlias = BaseInventory[BackpackItem]
 """A class to represent the client's backpack."""

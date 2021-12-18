@@ -15,7 +15,7 @@ from ...gateway import READ_U32
 from ...models import register
 from ...protobufs import GCMsgProto
 from .._gc import GCState as GCState_
-from .backpack import Backpack, Casket
+from .backpack import Backpack, BaseInspectedItem, Casket, Paint
 from .enums import Language
 from .models import Sticker, User
 from .protobufs import base, cstrike, econ, gcsdk
@@ -174,9 +174,35 @@ class GCState(GCState_):
     def handle_client_preview_data_block_response(self, msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse]):
         # decode the wear
         item = msg.body.iteminfo
-        packed_wear = struct.pack(">l", msg.body.iteminfo.paintwear)
-        item.paintwear = struct.unpack(">f", packed_wear)[0]
-        self.dispatch("inspect_item_info", item)
+        packed_wear = struct.pack(">l", item.paintwear)
+        inspected_item = BaseInspectedItem(
+            id=item.itemid,
+            def_index=item.defindex,
+            paint=Paint(index=item.paintindex, wear=struct.unpack(">f", packed_wear)[0], seed=item.paintseed),
+            rarity=item.rarity,
+            quality=item.quality,
+            kill_eater_score_type=item.killeaterscoretype,
+            kill_eater_value=item.killeatervalue,
+            custom_name=item.customname,
+            stickers=[
+                Sticker(
+                    slot=sticker.slot,  # type: ignore
+                    id=sticker.id,
+                    wear=sticker.wear,
+                    scale=sticker.scale,
+                    rotation=sticker.rotation,
+                    tint_id=sticker.tint_id,
+                )
+                for sticker in item.stickers
+            ],
+            inventory=item.inventory,
+            origin=item.origin,
+            quest_id=item.questid,
+            drop_reason=item.dropreason,
+            music_index=item.musicindex,
+            ent_index=item.entindex,
+        )
+        self.dispatch("inspect_item_info", inspected_item)
 
     @register(Language.ItemCustomizationNotification)
     def handle_item_customization_notification(self, msg: GCMsgProto[econ.ItemCustomizationNotification]):

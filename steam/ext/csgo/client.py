@@ -16,6 +16,7 @@ from .protobufs.cstrike import PreviewDataBlock
 from .state import GCState
 
 if TYPE_CHECKING:
+    from .backpack import BaseInspectedItem
     from .protobufs.gcsdk import ClientHello
 
 
@@ -43,15 +44,15 @@ class Client(Client_):
         await super()._handle_ready()
 
     @overload
-    async def inspect_item(self, *, owner: SteamID, asset_id: int, d: int) -> PreviewDataBlock:
+    async def inspect_item(self, *, owner: SteamID, asset_id: int, d: int) -> BaseInspectedItem:
         ...
 
     @overload
-    async def inspect_item(self, *, market_id: int, asset_id: int, d: int) -> PreviewDataBlock:
+    async def inspect_item(self, *, market_id: int, asset_id: int, d: int) -> BaseInspectedItem:
         ...
 
     @overload
-    async def inspect_item(self, *, url: str) -> PreviewDataBlock:
+    async def inspect_item(self, *, url: str) -> BaseInspectedItem:
         ...
 
     async def inspect_item(
@@ -62,10 +63,21 @@ class Client(Client_):
         d: int = 0,
         market_id: int = 0,
         url: str = "",
-    ) -> PreviewDataBlock:
-        """
-        The parameters can be taken from `inspect` links either from an inventory or market.
-        The market has the `m` parameter, while the inventory one has `s`.
+    ) -> BaseInspectedItem:
+        """Inspect an item.
+
+        Parameters
+        ----------
+        owner
+            The owner of the item.
+        asset_id
+            The asset id of the item.
+        d
+            The "D" number following the "D" character.
+        market_id
+            The id of the item on the steam community market.
+        url
+            The full inspect url to be parsed.
         """
 
         if url:
@@ -93,7 +105,7 @@ class Client(Client_):
             )
         )
 
-        return await self.wait_for("inspect_item_info", timeout=60.0, check=lambda item: item.itemid == asset_id)
+        return await self.wait_for("inspect_item_info", timeout=60.0, check=lambda item: item.id == asset_id)
 
     if TYPE_CHECKING:
 
