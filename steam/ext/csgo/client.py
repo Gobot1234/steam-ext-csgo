@@ -82,7 +82,6 @@ class Client(Client_):
             d: int = 0,
             market_id: int = 0,
             url: str = "",
-            _timeout: int = 10
     ) -> PreviewDataBlock:
         """
         The parameters can be taken from `inspect` links either from an inventory or market.
@@ -116,7 +115,7 @@ class Client(Client_):
 
         return await self.wait_for(
             "inspect_item_info",
-            timeout=_timeout,
+            timeout=60.0,
             check=lambda item: item.itemid == asset_id
         )
 
