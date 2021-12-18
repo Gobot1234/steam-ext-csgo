@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import TYPE_CHECKING, Any, overload, Type
+from typing import TYPE_CHECKING, Any, overload
 
 from typing_extensions import ClassVar
 
@@ -67,11 +67,7 @@ class Client(Client_):
         ...
 
     @overload
-    async def inspect_item(self, *, s: int, a: int, d: int) -> PreviewDataBlock:
-        ...
-
-    @overload
-    async def inspect_item(self, *, m: int, a: int, d: int) -> PreviewDataBlock:
+    async def inspect_item(self, *, market_id: int, asset_id: int, d: int) -> PreviewDataBlock:
         ...
 
     @overload
@@ -82,51 +78,46 @@ class Client(Client_):
             self,
             *,
             owner: SteamID | None = None,
-            asset_id: int | None = None,
-            s: int = 0,
-            a: int = 0,
+            asset_id: int = 0,
             d: int = 0,
-            m: int = 0,
+            market_id: int = 0,
             url: str = "",
-            timeout: int=10
+            _timeout: int = 10
     ) -> PreviewDataBlock:
         """
         The parameters can be taken from `inspect` links either from an inventory or market.
         The market has the `m` parameter, while the inventory one has `s`.
-        :param s: steam id64 of owner
-        :param a: item (asset) id
-        :param d: inspect id (Unknown d number)
-        :param m: market id
         """
-        if owner:
-            s = owner.id64
-        if asset_id:
-            a = asset_id
 
         if url:
-            search = re.search(r'[SM](\d+)A(\d+)D(\d+)$', url)
-            s = int(search[1]) if search[0].startswith("S") else 0
-            m = int(search[1]) if search[0].startswith("M") else 0
-            a = int(search[2])
-            d = int(search[3])
+            try:
+                search = re.search(r'[SM](\d+)A(\d+)D(\d+)$', url)
+                owner = SteamID(int(search[1]) if search[0].startswith("S") else 0)
+                market_id = int(search[1]) if search[0].startswith("M") else 0
+                asset_id = int(search[2])
+                d = int(search[3])
+            except TypeError:
+                raise ValueError("Inspect url is invalid")
 
-        if s == 0 and m == 0:
-            raise TypeError(f"Missing required keyword-only argument: {'s' if not s else 'm'}")
+        elif owner is None and market_id == 0:
+            raise TypeError(f"Missing required keyword-only argument: 'owner' or 'market_id'")
+        elif d == 0 or asset_id == 0:
+            raise TypeError(f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
 
         await self.ws.send_gc_message(
             GCMsgProto(
                     Language.Client2GCEconPreviewDataBlockRequest,
-                    param_s=s,
-                    param_a=a
+                    param_s=owner.id64 if owner else 0,
+                    param_a=asset_id,
                     param_d=d,
-                    param_m=m,
+                    param_m=market_id,
                 )
         )
 
         return await self.wait_for(
             "inspect_item_info",
-            timeout=timeout,
-            check=lambda item: item.itemid == a
+            timeout=_timeout,
+            check=lambda item: item.itemid == asset_id
         )
 
     if TYPE_CHECKING:
