@@ -5,9 +5,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from ... import utils
-from ...abc import SteamID
 from ...protobufs import GCMsgProto
 from ...trade import BaseInventory, Inventory, Item
+from ...utils import make_id64
 from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum, Language
 from .models import Sticker
 from .protobufs.base import Item as ProtoItem, ItemAttribute, ItemEquipped
@@ -110,12 +110,20 @@ class BackpackItem(Item):
                     break
         return contained_items
 
-    async def inspect(
-        self,
-        owner: SteamID,
-        d: str,
-    ):
-        ...
+    @property
+    def inspect_url(self) -> str | None:
+        """he inspect url of item if it's inspectable."""
+        try:
+            for action in self.actions:
+                if "inspect" in action["name"].lower():
+                    return (
+                        action["link"]
+                        .replace("%owner_steamid%", str(make_id64(self.account_id)))
+                        .replace("%assetid%", str(self.id))
+                    )
+
+        except (ValueError, KeyError):
+            return None
 
 
 class Backpack(BaseInventory[BackpackItem]):
