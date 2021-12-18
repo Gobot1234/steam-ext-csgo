@@ -13,7 +13,7 @@ from .protobufs import cstrike
 
 if TYPE_CHECKING:
     from .backpack import Backpack
-    from .state import ConnectionState
+    from .state import GCState
 
 
 @dataclass
@@ -21,25 +21,20 @@ class Sticker:
     __slots__ = tuple(cstrike.PreviewDataBlockSticker.__annotations__)
 
     slot: Literal[1, 2, 3, 4, 5]  # TODO: enum these
-    sticker_id: int
+    id: int
     wear: float | None
     scale: float | None
     rotation: float | None
+    tint_id: float
 
     @classmethod
     def _get_attrs(cls) -> list[str]:
         return cls.__slots__[2:]  # the attributes to decode on
 
 
-if TYPE_CHECKING:
-
-    class Sticker(Sticker, cstrike.PreviewDataBlockSticker):
-        ...
-
-
 class BaseUser(abc.BaseUser):
     __slots__ = ()
-    _state: ConnectionState
+    _state: GCState
 
     async def csgo_profile(self) -> ProfileInfo:
         msg = await self._state.fetch_user_csgo_profile(self.id64)

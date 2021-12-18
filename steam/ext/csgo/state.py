@@ -1,47 +1,39 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import math
 import struct
 import sys
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from ... import utils
 from ...abc import UserDict
-from ...errors import HTTPException
-from ...game import CSGO, Game
+from ...game import CSGO
 from ...gateway import READ_U32
-from ...models import EventParser, register
-from ...protobufs import EMsg, GCMsg, GCMsgProto, MsgProto
-from ...state import ConnectionState
-from ...trade import Inventory
-from .backpack import Backpack
+from ...models import register
+from ...protobufs import GCMsgProto
+from .._gc import GCState as GCState_
+from .backpack import Backpack, Casket
 from .enums import Language
 from .models import Sticker, User
 from .protobufs import base, cstrike, econ, gcsdk
 
 if TYPE_CHECKING:
-    from steam.protobufs.client_server_2 import CMsgGcClient
-
     from .client import Client
 
 log = logging.getLogger(__name__)
 READ_F32 = struct.Struct("<f").unpack_from
 
 
-class GCState(ConnectionState):
-    gc_parsers: dict[Language, EventParser]
+class GCState(GCState_):
+    gc_parsers: dict[Language, Callable]
     client: Client
+    Language = Language
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
-        self._unpatched_inventory: Callable[[Game], Coroutine[None, None, Inventory]] = None  # type: ignore
-        self.backpack: Backpack = None  # type: ignore
-        self._gc_connected = asyncio.Event()
-        self._gc_ready = asyncio.Event()
         self.casket_items: dict[int, base.Item] = {}
 
     def _store_user(self, data: UserDict) -> User:
@@ -53,32 +45,6 @@ class GCState(ConnectionState):
         else:
             user._update(data)
         return user
-
-    @register(EMsg.ClientFromGC)
-    async def parse_gc_message(self, msg: MsgProto[CMsgGcClient]) -> None:
-        if msg.body.appid != self.client.GAME.id:
-            return
-
-        try:
-            language = Language(utils.clear_proto_bit(msg.body.msgtype))
-        except ValueError:
-            return log.info(
-                f"Ignoring unknown msg type: {msg.body.msgtype} ({utils.clear_proto_bit(msg.body.msgtype)})"
-            )
-
-        try:
-            msg = (
-                GCMsgProto(language, msg.body.payload)
-                if utils.is_proto(msg.body.msgtype)
-                else GCMsg(language, msg.body.payload)
-            )
-        except Exception as exc:
-            return log.error(f"Failed to deserialize message: {language!r}, {msg.body.payload!r}", exc_info=exc)
-        else:
-            log.debug(f"Socket has received GC message %r from the websocket.", msg)
-
-        self.dispatch("gc_message_receive", msg)
-        self.run_parser(language, msg)
 
     @register(Language.ClientWelcome)
     def parse_gc_client_connect(self, _) -> None:
@@ -104,15 +70,6 @@ class GCState(ConnectionState):
         if not self._gc_ready.is_set():
             self._gc_ready.set()
             self.dispatch("gc_ready")
-
-    def patch_user_inventory(self, new_backpack: Backpack) -> None:
-        async def inventory(_, game: Game) -> Inventory | Backpack:
-            if game != CSGO:
-                return await self._unpatched_inventory(game)
-
-            return new_backpack
-
-        self.client.user.__class__.inventory = inventory
 
     def set(self, name: str, value: Any) -> None:
         # would be nice if this was a macro
@@ -188,11 +145,11 @@ class GCState(ConnectionState):
                 item_count = utils.get(cso_item.attribute, def_index=270)
                 if item_count:
                     self.set("casket_contained_item_count", READ_U32(item_count.value_bytes)[0])
+                    item.__class__ = Casket
 
             if is_casket_item:
                 self.casket_items[cso_item.id] = cso_item
 
-        self.patch_user_inventory(backpack)
         self.backpack = backpack
         return backpack
 
