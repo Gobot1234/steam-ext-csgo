@@ -18,7 +18,7 @@ from .._gc import GCState as GCState_
 from .backpack import Backpack, BaseInspectedItem, Casket, Paint
 from .enums import Language
 from .models import Sticker, User
-from .protobufs import base, cstrike, econ, gcsdk
+from .protobufs import base, cstrike, econ, sdk
 
 if TYPE_CHECKING:
     from .client import Client
@@ -30,7 +30,7 @@ READ_F32 = struct.Struct("<f").unpack_from
 class GCState(GCState_):
     gc_parsers: dict[Language, Callable]
     client: Client
-    Language = Language
+    Language: Language = Language
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
@@ -53,14 +53,14 @@ class GCState(GCState_):
             self._gc_connected.set()
 
     @register(Language.ClientConnectionStatus)
-    def parse_client_goodbye(self, msg: GCMsgProto[gcsdk.ConnectionStatus] | None = None) -> None:
-        if msg is None or msg.body.status == gcsdk.GcConnectionStatus.NoSession:
+    def parse_client_goodbye(self, msg: GCMsgProto[sdk.ConnectionStatus] | None = None) -> None:
+        if msg is None or msg.body.status == sdk.GcConnectionStatus.NoSession:
             self.dispatch("gc_disconnect")
             self._gc_connected.clear()
             self._gc_ready.clear()
 
     @register(Language.ClientWelcome)
-    async def parse_gc_client_connect(self, msg: GCMsgProto[gcsdk.ClientWelcome]) -> None:
+    async def parse_gc_client_connect(self, msg: GCMsgProto[sdk.ClientWelcome]) -> None:
         if msg.body.outofdate_subscribed_caches:
             for cache in msg.body.outofdate_subscribed_caches[0].objects:
                 if cache.type_id == 1:
@@ -136,7 +136,7 @@ class GCState(GCState_):
                     for idx, attr in enumerate(attrs):
                         attribute = utils.get(item.attribute, def_index=114 + (i * 4) + idx)
                         if attribute:
-                            setattr(sticker, attribute, READ_F32(attribute.value_bytes)[0])
+                            setattr(sticker, attr, READ_F32(attribute.value_bytes)[0])
 
                     item.stickers.append(sticker)
 
@@ -212,7 +212,7 @@ class GCState(GCState_):
         self.dispatch("item_customization_notification", msg.body)
 
     @register(Language.SOCreate)
-    async def handle_so_create(self, msg: GCMsgProto[gcsdk.SingleObject]):
+    async def handle_so_create(self, msg: GCMsgProto[sdk.SingleObject]):
         if msg.body.type_id != 1:
             return  # Not an item
 
@@ -226,15 +226,15 @@ class GCState(GCState_):
         self.dispatch("item_receive", item)
 
     @register(Language.SOUpdate)
-    async def handle_so_update(self, msg: GCMsgProto[gcsdk.SingleObject]):
+    async def handle_so_update(self, msg: GCMsgProto[sdk.SingleObject]):
         await self._handle_so_update(msg.body)
 
     @register(Language.SOUpdateMultiple)
-    async def handle_so_update_multiple(self, msg: GCMsgProto[gcsdk.MultipleObjects]):
+    async def handle_so_update_multiple(self, msg: GCMsgProto[sdk.MultipleObjects]):
         for object in msg.body.objects_modified:
             await self._handle_so_update(object)  # type: ignore
 
-    async def _handle_so_update(self, object: gcsdk.SingleObject):  # this should probably be a protocol
+    async def _handle_so_update(self, object: sdk.SingleObject):  # this should probably be a protocol
         if object.type_id != 1:
             return log.debug("Unknown item %r updated", object)
 
@@ -247,7 +247,7 @@ class GCState(GCState_):
         self.dispatch("item_update", before, after)
 
     @register(Language.SODestroy)
-    def handle_so_destroy(self, msg: GCMsgProto[gcsdk.SingleObject]):
+    def handle_so_destroy(self, msg: GCMsgProto[sdk.SingleObject]):
         if msg.body.type_id != 1 or not self.backpack:
             return
 

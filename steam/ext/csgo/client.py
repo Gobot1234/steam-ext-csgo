@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, overload
 
-from typing_extensions import ClassVar
+from typing_extensions import Final
 
 from ... import utils
 from ...abc import SteamID
@@ -17,7 +17,7 @@ from .state import GCState
 
 if TYPE_CHECKING:
     from .backpack import BaseInspectedItem
-    from .protobufs.gcsdk import ClientHello
+    from .protobufs.sdk import ClientHello
 
 
 __all__ = (
@@ -29,7 +29,7 @@ from ...protobufs import GCMsgProto
 
 
 class Client(Client_):
-    _GAME: ClassVar = CSGO
+    _GAME: Final = CSGO  # type: ignore
     user: ClientUser
     _connection: GCState
 
@@ -91,7 +91,7 @@ class Client(Client_):
                 raise ValueError("Inspect url is invalid")
 
         elif owner is None and market_id == 0:
-            raise TypeError(f"Missing required keyword-only argument: 'owner' or 'market_id'")
+            raise TypeError("Missing required keyword-only argument: 'owner' or 'market_id'")
         elif d == 0 or asset_id == 0:
             raise TypeError(f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
 
