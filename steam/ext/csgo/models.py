@@ -16,19 +16,27 @@ if TYPE_CHECKING:
     from .state import GCState
 
 
-@dataclass
 class Sticker:
-    __slots__ = tuple(cstrike.PreviewDataBlockSticker.__annotations__)
+    __slots__ = ("slot", "id", "wear", "scale", "rotation", "tint_id")
 
-    slot: Literal[1, 2, 3, 4, 5]  # TODO: enum these
-    id: int
-    wear: float | None = None
-    scale: float | None = None
-    rotation: float | None = None
-    tint_id: float | None = None
+    def __init__(
+        self,
+        slot: Literal[1, 2, 3, 4, 5],  # TODO: enum these
+        id: int,
+        wear: float | None = None,
+        scale: float | None = None,
+        rotation: float | None = None,
+        tint_id: float | None = None,
+    ):
+        self.slot = slot
+        self.id = id
+        self.wear = wear
+        self.scale = scale
+        self.rotation = rotation
+        self.tint_id = tint_id
 
     @classmethod
-    def _get_attrs(cls) -> list[str]:
+    def _get_attrs(cls) -> tuple[str, ...]:
         return (
             "wear",
             "scale",
@@ -97,3 +105,6 @@ class ProfileInfo:
     def percentage_of_current_level(self) -> int:
         """The user's current level."""
         return math.floor((self.current_xp - 327680000) / 5000)
+
+    def __repr__(self) -> str:
+        return f"<ProfileInfo user={self.user} >"

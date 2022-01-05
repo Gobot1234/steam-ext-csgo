@@ -25,7 +25,11 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-steamio = {git = "https://github.com/Gobot1234/steam.py", branch="main"}
+steamio = {git = "https://github.com/Gobot1234/steam.py.git", rev = "main"}
+
+
+[tool.poetry.dev-dependencies]
+black = {version = "^21.12b0", allow-prereleases = true}
 
 [tool.black]
 line-length = 120
@@ -36,6 +40,9 @@ line_length = 120
 combine_as_imports = true
 atomic = true
 ensure_newline_before_comments = true
+
+[tool.pyright]
+typeCheckingMode = "basic"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

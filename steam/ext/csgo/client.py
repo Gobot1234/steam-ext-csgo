@@ -32,6 +32,7 @@ class Client(Client_):
     _GAME: Final = CSGO  # type: ignore
     user: ClientUser
     _connection: GCState
+    _GC_HEART_BEAT = 30.0
 
     def _get_state(self, **options: Any) -> GCState:
         return GCState(client=self, **options)
@@ -81,14 +82,14 @@ class Client(Client_):
         """
 
         if url:
-            try:
-                search = re.search(r"[SM](\d+)A(\d+)D(\d+)$", url)
-                owner = SteamID(int(search[1]) if search[0].startswith("S") else 0)
-                market_id = int(search[1]) if search[0].startswith("M") else 0
-                asset_id = int(search[2])
-                d = int(search[3])
-            except TypeError:
+            search = re.search(r"[SM](\d+)A(\d+)D(\d+)$", url)
+            if search is None:
                 raise ValueError("Inspect url is invalid")
+
+            owner = SteamID(int(search[1]) if search[0].startswith("S") else 0)
+            market_id = int(search[1]) if search[0].startswith("M") else 0
+            asset_id = int(search[2])
+            d = int(search[3])
 
         elif owner is None and market_id == 0:
             raise TypeError("Missing required keyword-only argument: 'owner' or 'market_id'")

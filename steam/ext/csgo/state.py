@@ -15,7 +15,7 @@ from ...gateway import READ_U32
 from ...models import register
 from ...protobufs import GCMsgProto
 from .._gc import GCState as GCState_
-from .backpack import Backpack, BaseInspectedItem, Casket, Paint
+from .backpack import Backpack, BaseInspectedItem, Casket, CasketItem, Paint
 from .enums import Language
 from .models import Sticker, User
 from .protobufs import base, cstrike, econ, sdk
@@ -34,7 +34,7 @@ class GCState(GCState_):
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
-        self.casket_items: dict[int, base.Item] = {}
+        self.casket_items: dict[int, CasketItem] = {}
 
     def _store_user(self, data: UserDict) -> User:
         try:
@@ -45,12 +45,6 @@ class GCState(GCState_):
         else:
             user._update(data)
         return user
-
-    @register(Language.ClientWelcome)
-    def parse_gc_client_connect(self, _) -> None:
-        if not self._gc_connected.is_set():
-            self.dispatch("gc_connect")
-            self._gc_connected.set()
 
     @register(Language.ClientConnectionStatus)
     def parse_client_goodbye(self, msg: GCMsgProto[sdk.ConnectionStatus] | None = None) -> None:
@@ -83,18 +77,21 @@ class GCState(GCState_):
     async def update_backpack(self, *cso_items: base.Item, is_cache_subscribe: bool = False) -> Backpack:
         await self.client.wait_until_ready()
 
-        backpack: Backpack = self.backpack or Backpack(await self._unpatched_inventory(CSGO))
+        backpack: Backpack = self.backpack or await self.fetch_backpack(Backpack)  # type: ignore
 
         for cso_item in cso_items:  # merge the two items
             item = utils.get(backpack, asset_id=cso_item.id)
+            print("updating", item)
             is_casket_item = False
             if item is None:
                 # is the item contained in a casket?
                 casket_id_low = utils.get(cso_item.attribute, def_index=272)
                 casket_id_high = utils.get(cso_item.attribute, def_index=273)
-                if not casket_id_low or not casket_id_high:
-                    continue  # the item has been removed (gc sometimes sends you items that you have crafted/deleted)
+                if not (casket_id_low and casket_id_high):
+                    log.info("Received an item that isn't our inventory %r", cso_item)
+                    continue  # the item has been removed (gc sometimes sends you items that you have deleted)
                 is_casket_item = True
+                cso_item.__class__ = CasketItem
                 cso_item.casket_id = int(
                     f"{READ_U32(casket_id_low.value_bytes)[0]:032b}{READ_U32(casket_id_high.value_bytes)[0]:032b}",
                     base=2,
@@ -111,22 +108,24 @@ class GCState(GCState_):
                 self.set("custom_name", custom_name.value_bytes[2:].decode("utf-8"))
 
             paint_index = utils.get(cso_item.attribute, def_index=6)
-            if paint_index:
-                self.set("paint_index", READ_F32(paint_index.value_bytes)[0])
-
             paint_seed = utils.get(cso_item.attribute, def_index=7)
-            if paint_seed:
-                self.set("paint_seed", math.floor(READ_F32(paint_seed.value_bytes)[0]))
-
             paint_wear = utils.get(cso_item.attribute, def_index=8)
+            if any((paint_index, paint_seed, paint_wear)):
+                paint = Paint()
+                self.set("paint", paint)
+            if paint_index:
+                paint.index, *_ = READ_F32(paint_index.value_bytes)
+            if paint_seed:
+                paint.seed = math.floor(*READ_F32(paint_seed.value_bytes))
             if paint_wear:
-                self.set("paint_wear", READ_F32(paint_wear.value_bytes)[0])
+                paint.wear, *_ = READ_F32(paint_wear.value_bytes)
 
             tradable_after_date = utils.get(cso_item.attribute, def_index=75)
             if tradable_after_date:
                 self.set("tradable_after", datetime.utcfromtimestamp(READ_U32(tradable_after_date.value_bytes)[0]))
 
-            self.set("stickers", [])
+            stickers = []
+            self.set("stickers", stickers)
             attrs = Sticker._get_attrs()
             for i in range(1, 6):
                 sticker_id = utils.get(cso_item.attribute, def_index=113 + (i * 4))
@@ -134,23 +133,22 @@ class GCState(GCState_):
                     sticker = Sticker(slot=i, id=READ_U32(sticker_id.value_bytes)[0])
 
                     for idx, attr in enumerate(attrs):
-                        attribute = utils.get(item.attribute, def_index=114 + (i * 4) + idx)
+                        attribute = utils.get(cso_item.attribute, def_index=114 + (i * 4) + idx)
                         if attribute:
                             setattr(sticker, attr, READ_F32(attribute.value_bytes)[0])
 
-                    item.stickers.append(sticker)
+                    stickers.append(sticker)
 
             if cso_item.def_index == 1201:  # storage unit
-                self.set("casket_contained_item_count", 0)
+                item = utils.update_class(item, Casket.__new__(Casket))  # __class__ assignment doesn't work here
+                backpack.items[backpack.items.index(item)] = item  # type: ignore
                 item_count = utils.get(cso_item.attribute, def_index=270)
-                if item_count:
-                    self.set("casket_contained_item_count", READ_U32(item_count.value_bytes)[0])
-                    item.__class__ = Casket
+                self.set("contained_item_count", READ_U32(item_count.value_bytes)[0] if item_count is not None else 0)
 
             if is_casket_item:
                 self.casket_items[cso_item.id] = cso_item
 
-        self.backpack = backpack
+        self.backpack = backpack  # type: ignore
         return backpack
 
     @register(Language.MatchmakingGC2ClientHello)
@@ -187,7 +185,7 @@ class GCState(GCState_):
             stickers=[
                 Sticker(
                     slot=sticker.slot,  # type: ignore
-                    id=sticker.id,
+                    id=sticker.sticker_id,
                     wear=sticker.wear,
                     scale=sticker.scale,
                     rotation=sticker.rotation,
@@ -218,7 +216,7 @@ class GCState(GCState_):
 
         cso_item = base.Item().parse(msg.body.object_data)
         backpack = await self.update_backpack(cso_item)
-        if cso_item.casket_id:
+        if isinstance(cso_item, CasketItem):
             return log.debug("Received a casket item %r", cso_item)
         item = utils.get(backpack, asset_id=cso_item.id)
         if item is None:
@@ -259,3 +257,7 @@ class GCState(GCState_):
             setattr(item, attribute_name, getattr(deleted_item, attribute_name))
         self.backpack.items.remove(item)  # type: ignore
         self.dispatch("item_remove", item)
+
+    # @register(Language.SOCacheSubscribed)
+    # def handle_so_cache_subscribed(self, msg):
+    #     ...
