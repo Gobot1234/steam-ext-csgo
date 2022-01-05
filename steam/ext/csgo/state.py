@@ -30,7 +30,8 @@ READ_F32 = struct.Struct("<f").unpack_from
 class GCState(GCState_):
     gc_parsers: dict[Language, Callable]
     client: Client
-    Language: Language = Language
+    Language: type[Language] = Language
+    backpack: Backpack
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
@@ -77,11 +78,10 @@ class GCState(GCState_):
     async def update_backpack(self, *cso_items: base.Item, is_cache_subscribe: bool = False) -> Backpack:
         await self.client.wait_until_ready()
 
-        backpack: Backpack = self.backpack or await self.fetch_backpack(Backpack)  # type: ignore
+        backpack = self.backpack if self.backpack is not None else await self.fetch_backpack(Backpack)
 
         for cso_item in cso_items:  # merge the two items
             item = utils.get(backpack, asset_id=cso_item.id)
-            print("updating", item)
             is_casket_item = False
             if item is None:
                 # is the item contained in a casket?
@@ -215,12 +215,15 @@ class GCState(GCState_):
             return  # Not an item
 
         cso_item = base.Item().parse(msg.body.object_data)
-        backpack = await self.update_backpack(cso_item)
-        if isinstance(cso_item, CasketItem):
-            return log.debug("Received a casket item %r", cso_item)
-        item = utils.get(backpack, asset_id=cso_item.id)
+        self.backpack = await self.fetch_backpack(Backpack)  # refresh the backpack
+        item = utils.get(self.backpack, asset_id=cso_item.id)
         if item is None:
             return log.info("Received an item that isn't our inventory %r", cso_item)
+
+        await self.update_backpack(cso_item)
+        if isinstance(cso_item, CasketItem):
+            return log.debug("Received a casket item %r", cso_item)
+
         self.dispatch("item_receive", item)
 
     @register(Language.SOUpdate)
