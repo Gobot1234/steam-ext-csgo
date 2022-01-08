@@ -215,11 +215,12 @@ class GCState(GCState_):
             return  # Not an item
 
         cso_item = base.Item().parse(msg.body.object_data)
-        self.backpack = await self.fetch_backpack(Backpack)  # refresh the backpack
-        item = utils.get(self.backpack, asset_id=cso_item.id)
+        backpack = await self.fetch_backpack(Backpack)  # refresh the backpack
+        item = utils.get(backpack, asset_id=cso_item.id)
         if item is None:
             return log.info("Received an item that isn't our inventory %r", cso_item)
 
+        self.backpack.items.append(item)  # type: ignore
         await self.update_backpack(cso_item)
         if isinstance(cso_item, CasketItem):
             return log.debug("Received a casket item %r", cso_item)
