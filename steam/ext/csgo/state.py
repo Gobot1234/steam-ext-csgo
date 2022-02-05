@@ -10,15 +10,14 @@ from typing import TYPE_CHECKING, Any
 
 from ... import utils
 from ...abc import UserDict
-from ...game import CSGO
 from ...gateway import READ_U32
 from ...models import register
 from ...protobufs import GCMsgProto
 from .._gc import GCState as GCState_
-from .backpack import Backpack, BaseInspectedItem, Casket, CasketItem, Paint
+from .backpack import Backpack, Casket, CasketItem, Paint
 from .enums import Language
 from .models import Sticker, User
-from .protobufs import base, cstrike, econ, sdk
+from .protobufs import base, cstrike, sdk
 
 if TYPE_CHECKING:
     from .client import Client
@@ -32,6 +31,7 @@ class GCState(GCState_):
     client: Client
     Language: type[Language] = Language
     backpack: Backpack
+    _users: dict[int, User]
 
     def __init__(self, client: Client, **kwargs: Any):
         super().__init__(client, **kwargs)
@@ -126,14 +126,13 @@ class GCState(GCState_):
 
             stickers = []
             self.set("stickers", stickers)
-            attrs = Sticker._get_attrs()
-            for i in range(1, 6):
-                sticker_id = utils.get(cso_item.attribute, def_index=113 + (i * 4))
+            for i in range(4, 24, 4):
+                sticker_id = utils.get(cso_item.attribute, def_index=113 + i)
                 if sticker_id:
-                    sticker = Sticker(slot=i, id=READ_U32(sticker_id.value_bytes)[0])
+                    sticker = Sticker(slot=i, id=READ_U32(sticker_id.value_bytes)[0])  # type: ignore
 
-                    for idx, attr in enumerate(attrs):
-                        attribute = utils.get(cso_item.attribute, def_index=114 + (i * 4) + idx)
+                    for idx, attr in enumerate(Sticker._decodeable_attrs):
+                        attribute = utils.get(cso_item.attribute, def_index=114 + i + idx)
                         if attribute:
                             setattr(sticker, attr, READ_F32(attribute.value_bytes)[0])
 
@@ -145,10 +144,10 @@ class GCState(GCState_):
                 item_count = utils.get(cso_item.attribute, def_index=270)
                 self.set("contained_item_count", READ_U32(item_count.value_bytes)[0] if item_count is not None else 0)
 
-            if is_casket_item:
+            if isinstance(cso_item, CasketItem):
                 self.casket_items[cso_item.id] = cso_item
 
-        self.backpack = backpack  # type: ignore
+        self.backpack = backpack
         return backpack
 
     @register(Language.MatchmakingGC2ClientHello)
@@ -159,55 +158,16 @@ class GCState(GCState_):
     def handle_match_list(self, msg: GCMsgProto[cstrike.MatchList]):
         self.dispatch("match_list", msg.body.matches, msg.body)
 
-    @register(Language.PlayersProfile)
-    def handle_players_profile(self, msg: GCMsgProto[cstrike.PlayersProfile]):
-        if not msg.body.account_profiles:
-            return
-
-        profile = msg.body.account_profiles[0]
-
-        self.dispatch("players_profile", profile)
-
-    @register(Language.Client2GCEconPreviewDataBlockResponse)
-    def handle_client_preview_data_block_response(self, msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse]):
-        # decode the wear
-        item = msg.body.iteminfo
-        packed_wear = struct.pack(">l", item.paintwear)
-        inspected_item = BaseInspectedItem(
-            id=item.itemid,
-            def_index=item.defindex,
-            paint=Paint(index=item.paintindex, wear=struct.unpack(">f", packed_wear)[0], seed=item.paintseed),
-            rarity=item.rarity,
-            quality=item.quality,
-            kill_eater_score_type=item.killeaterscoretype,
-            kill_eater_value=item.killeatervalue,
-            custom_name=item.customname,
-            stickers=[
-                Sticker(
-                    slot=sticker.slot,  # type: ignore
-                    id=sticker.sticker_id,
-                    wear=sticker.wear,
-                    scale=sticker.scale,
-                    rotation=sticker.rotation,
-                    tint_id=sticker.tint_id,
-                )
-                for sticker in item.stickers
-            ],
-            inventory=item.inventory,
-            origin=item.origin,
-            quest_id=item.questid,
-            drop_reason=item.dropreason,
-            music_index=item.musicindex,
-            ent_index=item.entindex,
+    async def fetch_user_csgo_profile(self, user_id: int) -> cstrike.PlayersProfile:
+        await self.ws.send_gc_message(
+            GCMsgProto(Language.ClientRequestPlayersProfile, account_id=user_id, request_level=32)
         )
-        self.dispatch("inspect_item_info", inspected_item)
+        # TODO see if job_id works
+        msg: GCMsgProto[cstrike.PlayersProfile] = await self.gc_wait_for(
+            Language.PlayersProfile, check=lambda msg: msg.body.account_profiles[0].account_id == user_id
+        )
 
-    @register(Language.ItemCustomizationNotification)
-    def handle_item_customization_notification(self, msg: GCMsgProto[econ.ItemCustomizationNotification]):
-        if not msg.body.item_id or not msg.body.request:
-            return
-
-        self.dispatch("item_customization_notification", msg.body)
+        return msg.body
 
     @register(Language.SOCreate)
     async def handle_so_create(self, msg: GCMsgProto[sdk.SingleObject]):
@@ -217,7 +177,10 @@ class GCState(GCState_):
         cso_item = base.Item().parse(msg.body.object_data)
         self.backpack = await self.fetch_backpack(Backpack)  # refresh the backpack
         item = utils.get(self.backpack, asset_id=cso_item.id)
-        if item is None:
+
+        if item is None and not (
+            utils.get(cso_item.attribute, def_index=272) and utils.get(cso_item.attribute, def_index=273)
+        ):  # it's also not a casket item
             return log.info("Received an item that isn't our inventory %r", cso_item)
 
         await self.update_backpack(cso_item)
@@ -243,8 +206,8 @@ class GCState(GCState_):
 
         before = utils.get(self.backpack, asset_id=cso_item.id)
         if before is None:
-            return log.info("Received an item that isn't our inventory %r", object)
-        after = await self.update_backpack(cso_item)
+            return log.info("Received an item that isn't our inventory %r", cso_item)
+        after = utils.get(await self.update_backpack(cso_item), asset_id=cso_item.id)
         self.dispatch("item_update", before, after)
 
     @register(Language.SODestroy)
@@ -260,7 +223,3 @@ class GCState(GCState_):
             setattr(item, attribute_name, getattr(deleted_item, attribute_name))
         self.backpack.items.remove(item)  # type: ignore
         self.dispatch("item_remove", item)
-
-    # @register(Language.SOCacheSubscribed)
-    # def handle_so_cache_subscribed(self, msg):
-    #     ...

@@ -3,12 +3,12 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Self, TypeAlias
 
 from ... import utils
-from ...protobufs import GCMsgProto
+from ...protobufs import EMsg, GCMsgProto
 from ...trade import BaseInventory, Item
 from .enums import ItemCustomizationNotification as ItemCustomizationNotificationEnum, Language
 from .models import Sticker
@@ -19,6 +19,11 @@ if TYPE_CHECKING:
     from .state import GCState
 
 __all__ = (
+    "Paint",
+    "BaseItem",
+    "CasketItem",
+    "BaseInspectedItem",
+    "InspectedItem",
     "BackpackItem",
     "Backpack",
 )
@@ -63,7 +68,7 @@ class BaseItem:
     level: int
     quality: int
     flags: int
-    origin: int
+    origin: int  # https://github.com/perilouswithadollarsign/cstrike15_src/blob/f82112a2388b841d72cb62ca48ab1846dfcc11c8/game/shared/econ/econ_item_constants.h
     custom_name: str
     custom_description: str
     attribute: list[ItemAttribute]
@@ -105,8 +110,8 @@ class BaseInspectedItem:
     paint: Paint
     rarity: int
     quality: int
-    kill_eater_score_type: int
-    kill_eater_value: int
+    kill_eater_score_type: int | None
+    kill_eater_value: int | None
     custom_name: str
     stickers: list[Sticker]
     inventory: int
@@ -178,7 +183,10 @@ class BackpackItem(BaseBackpackItem):
             return None
 
     async def inspect(self) -> InspectedItem:
-        basic = await self._state.client.inspect_item(url=self.inspect_url)
+        inspect_url = self.inspect_url
+        if inspect_url is None:
+            raise ValueError("Cannot inspect this item")
+        basic = await self._state.client.inspect_item(url=inspect_url)
         return utils.update_class(self, basic)  # type: ignore
 
 
@@ -199,18 +207,35 @@ class Casket(BackpackItem):
         await self._state.ws.send_gc_message(
             GCMsgProto(Language.CasketItemAdd, casket_item_id=self.id, item_item_id=item.id)
         )
+        resp: GCMsgProto[ItemCustomizationNotificationProto] = await self._state.gc_wait_for(  # TODO
+            Language.ItemCustomizationNotification, lambda msg: [print(msg.body), msg.body.item_id[0] == ..., True][-1]
+        )
+        if resp.body.request != ItemCustomizationNotificationEnum.CasketAdded:
+            raise ValueError
 
-    async def remove(self, item: CasketItem) -> None:
+    async def remove(self, item: CasketItem) -> BackpackItem:
         """Remove an item from this casket.
 
         Parameters
         ----------
         item
             The item to remove.
+
+        Returns
+        -------
+        The item as a :class:`BackpackItem` in your inventory.
         """
         await self._state.ws.send_gc_message(
             GCMsgProto(Language.CasketItemExtract, casket_item_id=self.id, item_item_id=item.id)
         )
+        resp: GCMsgProto[ItemCustomizationNotificationProto] = await self._state.gc_wait_for(
+            Language.ItemCustomizationNotification, lambda msg: [print(msg.body), msg.body.item_id[0] == ..., True][-1]
+        )
+        if resp.body.request != ItemCustomizationNotificationEnum.CasketRemoved:
+            raise ValueError
+        backpack_item = utils.get(self._state.backpack, id=item.id)
+        assert backpack_item is not None
+        return backpack_item
 
     async def contents(self) -> list[CasketItem]:
         """This casket's contents"""
@@ -225,14 +250,15 @@ class Casket(BackpackItem):
             GCMsgProto(Language.CasketItemLoadContents, casket_item_id=self.id, item_item_id=self.id)
         )
 
-        notification: ItemCustomizationNotificationProto = await self._state.client.wait_for(  # type: ignore
-            "item_customization_notification",
-            check=lambda n: n.item_id[0] == self.id and n.request == ItemCustomizationNotificationEnum.CasketContents,
-            timeout=30,
+        notification: GCMsgProto[ItemCustomizationNotificationProto] = await self._state.gc_wait_for(
+            Language.ItemCustomizationNotification,
+            check=lambda msg: (
+                msg.body.request == ItemCustomizationNotificationEnum.CasketContents and msg.body.item_id[0] == self.id
+            ),
         )
 
         contained_items = []
-        for item_id in notification.item_id[1:]:
+        for item_id in notification.body.item_id[1:]:
             while True:
                 try:
                     contained_items.append(self._state.casket_items.pop(item_id))

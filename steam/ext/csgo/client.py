@@ -1,21 +1,30 @@
 from __future__ import annotations
 
 import re
+import struct
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, overload
 
-from typing_extensions import Final
+from typing_extensions import Final, Literal
 
 from ... import utils
-from ...abc import SteamID
+from ...abc import Message, SteamID
 from ...ext import commands
 from ...game import CSGO
+from ...gateway import GCMsgsT, Msgs
+from ...invite import ClanInvite, UserInvite
+from ...protobufs import GCMsgProto
+from ...trade import TradeOffer
 from .._gc import Client as Client_
+from .backpack import BackpackItem, Paint
 from .enums import Language
-from .models import ClientUser, User
-from .protobufs.cstrike import PreviewDataBlock
+from .models import ClientUser, Sticker, User
+from .protobufs import cstrike
 from .state import GCState
 
 if TYPE_CHECKING:
+    from ...comment import Comment
+    from ...ext import csgo
     from .backpack import BaseInspectedItem
     from .protobufs.sdk import ClientHello
 
@@ -25,14 +34,12 @@ __all__ = (
     "Bot",
 )
 
-from ...protobufs import GCMsgProto
-
 
 class Client(Client_):
-    _GAME: Final = CSGO  # type: ignore
+    _GAME: Final = CSGO
     user: ClientUser
     _connection: GCState
-    _GC_HEART_BEAT = 30.0
+    _GC_HEART_BEAT = 10.0
 
     def _get_state(self, **options: Any) -> GCState:
         return GCState(client=self, **options)
@@ -106,7 +113,42 @@ class Client(Client_):
             )
         )
 
-        return await self.wait_for("inspect_item_info", timeout=60.0, check=lambda item: item.id == asset_id)
+        msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse] = await self._connection.gc_wait_for(
+            Language.Client2GCEconPreviewDataBlockResponse,
+            check=lambda msg: msg.body.iteminfo.itemid == asset_id,
+        )
+
+        item = msg.body.iteminfo
+        # decode the wear
+        packed_wear = struct.pack(">l", item.paintwear)
+        (paint_wear,) = struct.unpack(">f", packed_wear)
+        return BaseInspectedItem(
+            id=item.itemid,
+            def_index=item.defindex,
+            paint=Paint(index=item.paintindex, wear=paint_wear, seed=item.paintseed),
+            rarity=item.rarity,
+            quality=item.quality,
+            kill_eater_score_type=item.killeaterscoretype,
+            kill_eater_value=item.killeatervalue,
+            custom_name=item.customname,
+            stickers=[
+                Sticker(
+                    slot=sticker.slot,  # type: ignore
+                    id=sticker.sticker_id,
+                    wear=sticker.wear,
+                    scale=sticker.scale,
+                    rotation=sticker.rotation,
+                    tint_id=sticker.tint_id,
+                )
+                for sticker in item.stickers
+            ],
+            inventory=item.inventory,
+            origin=item.origin,
+            quest_id=item.questid,
+            drop_reason=item.dropreason,
+            music_index=item.musicindex,
+            ent_index=item.entindex,
+        )
 
     if TYPE_CHECKING:
 
@@ -114,6 +156,210 @@ class Client(Client_):
             ...
 
         async def fetch_user(self, id: utils.Intable) -> User | None:
+            ...
+
+        async def on_gc_connect(self) -> None:
+            """Called after the client receives the welcome message from the GC.
+
+            Warning
+            -------
+            This is called every time we craft an item and disconnect so same warnings apply to
+            :meth:`steam.Client.on_connect`
+            """
+
+        async def on_gc_disconnect(self) -> None:
+            """Called after the client receives the goodbye message from the GC.
+
+            Warning
+            -------
+            This is called every time we craft an item and disconnect so same warnings apply to
+            :meth:`steam.Client.on_connect`
+            """
+
+        async def on_gc_ready(self) -> None:
+            """Called after the client connects to the GC and has the :attr:`schema`, :meth:`Client.user.inventory` and
+            set up and account info (:meth:`is_premium` and :attr:`backpack_slots`).
+
+            Warning
+            -------
+            This is called every time we craft an item and disconnect so same warnings apply to
+            :meth:`steam.Client.on_connect`
+            """
+
+        async def on_item_receive(self, item: csgo.BackpackItem) -> None:
+            """Called when the client receives an item.
+
+            Parameters
+            ----------
+            item: :class:`.BackpackItem`
+                The received item.
+            """
+
+        async def on_item_remove(self, item: csgo.BackpackItem) -> None:
+            """Called when the client has an item removed from its backpack.
+
+            Parameters
+            ----------
+            item: :class:`.BackpackItem`
+                The removed item.
+            """
+
+        async def on_item_update(self, before: csgo.BackpackItem, after: csgo.BackpackItem) -> None:
+            """Called when the client has an item in its backpack updated.
+
+            Parameters
+            ----------
+            before: :class:`.BackpackItem`
+                The item before being updated.
+            after: :class:`.BackpackItem`
+                The item now.
+            """
+
+        @overload
+        async def wait_for(  # type: ignore
+            self,
+            event: Literal[
+                "connect",
+                "disconnect",
+                "ready",
+                "login",
+                "logout",
+                "gc_connect",
+                "gc_disconnect",
+                "gc_ready",
+            ],
+            *,
+            check: "() -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> None:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["error"],
+            *,
+            check: "(str, Exception, tuple[Any, ...], dict[str, Any]) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> tuple[str, Exception, tuple[Any, ...], dict[str, Any]]:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["message"],
+            *,
+            check: "(Message) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> Message:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["comment"],
+            *,
+            check: "(Comment) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> Comment:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["user_update"],
+            *,
+            check: "(User, User) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> tuple[User, User]:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["typing"],
+            *,
+            check: "(User, datetime) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> tuple[User, datetime]:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal[
+                "trade_receive",
+                "trade_send",
+                "trade_accept",
+                "trade_decline",
+                "trade_cancel",
+                "trade_expire",
+                "trade_counter",
+            ],
+            *,
+            check: "(TradeOffer)-> bool" = ...,
+            timeout: float | None = ...,
+        ) -> TradeOffer:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["user_invite"],
+            *,
+            check: "(UserInvite) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> UserInvite:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal["clan_invite"],
+            *,
+            check: "(ClanInvite) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> ClanInvite:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal[
+                "socket_receive",
+                "socket_send",
+            ],
+            *,
+            check: "(Msgs) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> Msgs:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal[
+                "gc_message_receive",
+                "gc_message_send",
+            ],
+            *,
+            check: "(GCMsgsT) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> GCMsgsT:
+            ...
+
+        @overload
+        async def wait_for(
+            self,
+            event: Literal[
+                "item_receive",
+                "item_remove",
+                "item_update",
+            ],
+            *,
+            check: "(BackpackItem) -> bool" = ...,
+            timeout: float | None = ...,
+        ) -> BackpackItem:
             ...
 
 

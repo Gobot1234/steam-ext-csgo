@@ -1,4 +1,5 @@
 from steam.utils import StructIO
+
 from ....protobufs.struct_messages import StructMessage
 
 
