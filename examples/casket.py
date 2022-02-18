@@ -1,6 +1,7 @@
 # A small example demonstrating how to interact with caskets.
 
 import asyncio
+
 import steam
 from steam.ext import commands, csgo
 
