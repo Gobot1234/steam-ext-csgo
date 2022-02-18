@@ -144,6 +144,7 @@ if TYPE_CHECKING:
     class InspectedItem(Item, BaseInspectedItem):
         __slots__ = ()
 
+
 else:
 
     class InspectedItem(Item):
@@ -154,6 +155,7 @@ if TYPE_CHECKING:  # avoid mro issues but keep types
 
     class BaseBackpackItem(Item, BaseItem):
         __slots__ = ()
+
 
 else:
 
