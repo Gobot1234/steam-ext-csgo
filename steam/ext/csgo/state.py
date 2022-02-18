@@ -187,6 +187,7 @@ class GCState(GCState_):
         ):  # it's also not a casket item
             return log.info("Received an item that isn't our inventory %r", cso_item)
 
+        self.backpack.items.append(item)  # type: ignore
         await self.update_backpack(cso_item)
         if isinstance(cso_item, CasketItem):
             return log.debug("Received a casket item %r", cso_item)
