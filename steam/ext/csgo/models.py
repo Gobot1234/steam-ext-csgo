@@ -4,7 +4,6 @@ import math
 from dataclasses import dataclass
 from datetime import datetime
 from ipaddress import IPv4Address
-from pprint import pprint
 from typing import TYPE_CHECKING, Generic, TypeVar, overload
 
 from typing_extensions import Literal, Self
@@ -69,47 +68,20 @@ class MatchInfo:
         self.map = match_info.watchablematchinfo.game_map
         self.server_id = match_info.watchablematchinfo.server_id
 
-        self.reservation = match_info.roundstats_legacy
-        # round: int = betterproto.int32_field(4)
-        # kills: List[int] = betterproto.int32_field(5)
-        # assists: List[int] = betterproto.int32_field(6)
-        # deaths: List[int] = betterproto.int32_field(7)
-        # scores: List[int] = betterproto.int32_field(8)
-        # pings: List[int] = betterproto.int32_field(9)
-        # round_result: int = betterproto.int32_field(10)
-        # match_result: int = betterproto.int32_field(11)
-        # team_scores: List[int] = betterproto.int32_field(12)
-        # confirm: "MatchmakingServerConfirm" = betterproto.message_field(13)
-        # reservation_stage: int = betterproto.int32_field(14)
-        # match_duration: int = betterproto.int32_field(15)
-        # enemy_kills: List[int] = betterproto.int32_field(16)
-        # enemy_headshots: List[int] = betterproto.int32_field(17)
-        # enemy_3_ks: List[int] = betterproto.int32_field(18)
-        # enemy_4_ks: List[int] = betterproto.int32_field(19)
-        # enemy_5_ks: List[int] = betterproto.int32_field(20)
-        # mvps: List[int] = betterproto.int32_field(21)
-        # spectators_count: int = betterproto.uint32_field(22)
-        # spectators_count_tv: int = betterproto.uint32_field(23)
-        # spectators_count_lnk: int = betterproto.uint32_field(24)
-        # enemy_kills_agg: List[int] = betterproto.int32_field(25)
-        # drop_info: "MatchmakingServerRoundStatsDropInfo" = betterproto.message_field(26)
-        # switched_teams: bool = betterproto.bool_field(27)
-        # enemy_2_ks: List[int] = betterproto.int32_field(28)
-        # player_spawned: List[int] = betterproto.int32_field(29)
-        # team_spawn_count: List[int] = betterproto.int32_field(30)
-        # roundstats_legacy: "MatchmakingServerRoundStats" = betterproto.message_field(4)
-        # round_stats_all: List["MatchmakingServerRoundStats"] = betterproto.message_field(5)
-        pprint(match_info.to_dict())
+        self.round_stats = match_info.roundstatsall
 
     async def server(self) -> GameServer:
-        await self._state.client.fetch_game_server(ip=str(self.server_ip))
+        server = await self._state.client.fetch_server(ip=str(self.server_ip))
+        if server is None:
+            assert_never()
+        return server
 
 
 @dataclass
 class Matches:
     matches: list[MatchInfo]
-    streams: list["TournamentTeam"]
-    tournament_info: "TournamentInfo"
+    streams: list["cstrike.TournamentTeam"]
+    tournament_info: "cstrike.TournamentInfo"
 
 
 class BaseUser(abc.BaseUser):
@@ -119,7 +91,7 @@ class BaseUser(abc.BaseUser):
     async def csgo_profile(self) -> ProfileInfo[Self]:
         msg = await self._state.fetch_user_csgo_profile(self.id)
         if not msg.account_profiles:
-            raise ValueError("This should be unreachable?")
+            assert_never()
         return ProfileInfo(self, msg.account_profiles[0])
 
 
@@ -130,9 +102,11 @@ class User(BaseUser, user.User):
         await self._state.ws.send_gc_message(GCMsgProto(Language.MatchListRequestRecentUserGames, accountid=self.id))
         msg: GCMsgProto[cstrike.MatchList] = await self._state.gc_wait_for(
             Language.MatchList, check=lambda msg: msg.body.accountid == self.id
+        )  # type: ignore
+
+        return Matches(
+            [MatchInfo(match, self._state) for match in msg.body.matches], msg.body.streams, msg.body.tournamentinfo
         )
-        pprint(msg.body.to_dict())
-        # return Matches(msg.body)
 
 
 class ClientUser(BaseUser, user.ClientUser):

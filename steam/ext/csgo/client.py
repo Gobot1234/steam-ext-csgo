@@ -17,7 +17,7 @@ from ...protobufs import GCMsgProto
 from ...trade import TradeOffer
 from .._gc import Client as Client_
 from .backpack import BackpackItem, Paint
-from .enums import Language
+from .enums import ItemOrigin, ItemQuality, Language
 from .models import ClientUser, Sticker, User
 from .protobufs import cstrike
 from .state import GCState
@@ -103,6 +103,10 @@ class Client(Client_):
         elif d == 0 or asset_id == 0:
             raise TypeError(f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
 
+        future = self._connection.gc_wait_for(
+            Language.Client2GCEconPreviewDataBlockResponse,
+            check=lambda msg: msg.body.iteminfo.itemid == asset_id,
+        )
         await self.ws.send_gc_message(
             GCMsgProto(
                 Language.Client2GCEconPreviewDataBlockRequest,
@@ -113,10 +117,7 @@ class Client(Client_):
             )
         )
 
-        msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse] = await self._connection.gc_wait_for(
-            Language.Client2GCEconPreviewDataBlockResponse,
-            check=lambda msg: msg.body.iteminfo.itemid == asset_id,
-        )
+        msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse] = await future  # type: ignore
 
         item = msg.body.iteminfo
         # decode the wear
@@ -127,7 +128,7 @@ class Client(Client_):
             def_index=item.defindex,
             paint=Paint(index=item.paintindex, wear=paint_wear, seed=item.paintseed),
             rarity=item.rarity,
-            quality=item.quality,
+            quality=ItemQuality.try_value(item.quality),
             kill_eater_score_type=item.killeaterscoretype,
             kill_eater_value=item.killeatervalue,
             custom_name=item.customname,
@@ -143,7 +144,7 @@ class Client(Client_):
                 for sticker in item.stickers
             ],
             inventory=item.inventory,
-            origin=item.origin,
+            origin=ItemOrigin.try_value(item.origin),
             quest_id=item.questid,
             drop_reason=item.dropreason,
             music_index=item.musicindex,
