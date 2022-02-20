@@ -12,6 +12,8 @@ PROTOBUFS.update(  # type: ignore
         Language.MatchmakingGC2ClientHello: cstrike.MatchmakingClientHello,
         Language.MatchList: cstrike.MatchList,
         Language.PlayersProfile: cstrike.PlayersProfile,
+        Language.ClientRequestPlayersProfile: cstrike.ClientRequestPlayersProfile,
+        Language.MatchListRequestRecentUserGames: cstrike.MatchListRequestRecentUserGames,
         Language.Client2GCEconPreviewDataBlockRequest: cstrike.Client2GcEconPreviewDataBlockRequest,
         Language.Client2GCEconPreviewDataBlockResponse: cstrike.Client2GcEconPreviewDataBlockResponse,
         Language.ItemCustomizationNotification: econ.ItemCustomizationNotification,

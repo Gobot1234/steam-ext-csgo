@@ -1,4 +1,4 @@
-from ...enums import IntEnum
+from ...enums import Flags, IntEnum
 
 
 # fmt: off
@@ -21,6 +21,70 @@ class ItemCustomizationNotification(IntEnum):
     ActivateOperationCoin = 9179
     GraffitiUnseal        = 9185
     GenerateSouvenir      = 9204
+
+
+# All 3 lifted from
+# https://github.com/perilouswithadollarsign/cstrike15_src/blob/f82112a2388b841d72cb62ca48ab1846dfcc11c8/game/shared/econ/econ_item_constants.h
+class ItemQuality(IntEnum):
+    Undefined  = -1
+    Normal     = 0
+    Genuine    = 1
+    Vintage    = 2
+    Unusual    = 3
+    Unique     = 4
+    Community  = 5
+    Developer  = 6
+    SelfMade   = 7
+    Customised = 8
+    Strange    = 9
+    Completed  = 10
+    Haunted    = 11
+    Tournament = 12
+    Favoured   = 13
+    Max        = 14
+
+
+class ItemFlags(Flags):
+    CannotTrade                                = 1 << 0
+    CannotCraft                                = 1 << 1
+    CanBeTradedByFreeAccounts                  = 1 << 2
+    NotEcon                                    = 1 << 3
+    """Items that cannot interact in the economy (can't be traded, gift-wrapped, crafted, etc.)"""
+    PurchasedAfterStoreCraftabilityChanges2012 = 1 << 4
+    """Cosmetic items coming from the store are now usable in crafting"""
+    ForceBlueTeam                              = 1 << 5
+    StoreItem                                  = 1 << 6
+    Preview                                    = 1 << 7
+
+
+class ItemOrigin(IntEnum):
+    Invalid                   = -1
+    Drop                      = 0
+    Achievement               = 1
+    Purchased                 = 2
+    Traded                    = 3
+    Crafted                   = 4
+    StorePromotion            = 5
+    Gifted                    = 6
+    SupportGranted            = 7
+    FoundInCrate              = 8
+    Earned                    = 9
+    ThirdPartyPromotion       = 10
+    GiftWrapped               = 11
+    HalloweenDrop             = 12
+    PackageItem               = 13
+    Foreign                   = 14
+    CDKey                     = 15
+    CollectionReward          = 16
+    PreviewItem               = 17
+    SteamWorkshopContribution = 18
+    PeriodicScoreReward       = 19
+    Recycling                 = 20
+    TournamentDrop            = 21
+    StockItem                 = 22
+    QuestReward               = 23
+    LevelUpReward             = 24
+    Max                       = 25
 
 
 class Language(IntEnum):

@@ -3,7 +3,7 @@
 # plugin: python-betterproto
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import betterproto
 
@@ -792,8 +792,8 @@ class PreviewDataBlock(betterproto.Message):
     quality: int = betterproto.uint32_field(6)
     paintwear: int = betterproto.uint32_field(7)
     paintseed: int = betterproto.uint32_field(8)
-    killeaterscoretype: int = betterproto.uint32_field(9, optional=True)
-    killeatervalue: int = betterproto.uint32_field(10, optional=True)
+    killeaterscoretype: Optional[int] = betterproto.uint32_field(9, optional=True, group="_killeaterscoretype")
+    killeatervalue: Optional[int] = betterproto.uint32_field(10, optional=True, group="_killeatervalue")
     customname: str = betterproto.string_field(11)
     stickers: List["PreviewDataBlockSticker"] = betterproto.message_field(12)
     inventory: int = betterproto.uint32_field(13)
