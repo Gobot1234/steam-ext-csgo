@@ -29,7 +29,7 @@ class Sticker:
 
     def __init__(
         self,
-        slot: Literal[1, 2, 3, 4, 5],  # TODO: enum these
+        slot: Literal[0, 1, 2, 3, 4],
         id: int,
         wear: float | None = None,
         scale: float | None = None,
