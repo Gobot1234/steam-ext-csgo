@@ -6,7 +6,6 @@ import math
 import struct
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -144,12 +143,13 @@ class GCState(GCState_):
             self.set("origin", ItemOrigin.try_value(gc_item.origin))
 
             if gc_item.def_index == 1201:  # storage unit
+                assert item is not None
                 item = utils.update_class(item, Casket.__new__(Casket))  # __class__ assignment doesn't work here
                 backpack.items[backpack.items.index(item)] = item  # type: ignore
                 item_count = utils.get(gc_item.attribute, def_index=270)
                 self.set("contained_item_count", READ_U32(item_count.value_bytes)[0] if item_count is not None else 0)
 
-            if isinstance(gc_item, CasketItem):
+            elif isinstance(gc_item, CasketItem):
                 self.casket_items[gc_item.id] = gc_item
 
         self.backpack = backpack
@@ -187,7 +187,8 @@ class GCState(GCState_):
         ):  # it's also not a casket item
             return log.info("Received an item that isn't our inventory %r", cso_item)
 
-        self.backpack.items.append(item)  # type: ignore
+        if item is not None:
+            self.backpack.items.append(item)  # type: ignore
         await self.update_backpack(cso_item)
         if isinstance(cso_item, CasketItem):
             return log.debug("Received a casket item %r", cso_item)
