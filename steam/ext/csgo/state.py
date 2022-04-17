@@ -15,9 +15,9 @@ from ...gateway import READ_U32
 from ...models import register
 from ...protobufs import GCMsgProto
 from .._gc import GCState as GCState_
-from .backpack import Backpack, Casket, CasketItem, Paint
+from .backpack import Backpack, Casket, CasketItem, Paint, Sticker
 from .enums import ItemFlags, ItemOrigin, ItemQuality, Language
-from .models import Sticker, User
+from .models import User
 from .protobufs import base, cstrike, sdk
 
 if TYPE_CHECKING:

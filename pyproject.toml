@@ -27,9 +27,25 @@ packages = [
 python = "^3.7"
 steamio = {git = "https://github.com/Gobot1234/steam.py.git", rev = "main"}
 
+[tool.poetry.group.dev.dependencies]
+black = "^22.3"
+isort = "^5.10"
+poethepoet = "^0.13"
 
-[tool.poetry.dev-dependencies]
-black = {version = "^21.12b0", allow-prereleases = true}
+[tool.poetry.group.docs.dependencies]
+sphinx = "^4.5"
+furo = "^2022.4.7"
+mypy = "^0.942"
+sphinxcontrib_trio = "^1.1.2"
+sphinx-copybutton = "^0.5.0"
+sphinx-codeautolink = "^0.10.0"
+myst-parser = "^0.17.2"
+
+[tool.poe.tasks]
+_black = "black ."
+_isort = "isort ."
+fmt = ["_black", "_isort"]
+doc = "sphinx-build -b html -n -T -W --keep-going docs/ docs/_build"
 
 [tool.black]
 line-length = 120

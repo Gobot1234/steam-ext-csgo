@@ -23,31 +23,12 @@ if TYPE_CHECKING:
 
 UserT = TypeVar("UserT", bound=abc.BaseUser)
 
-
-class Sticker:
-    __slots__ = ("slot", "id", "wear", "scale", "rotation", "tint_id")
-
-    def __init__(
-        self,
-        slot: Literal[0, 1, 2, 3, 4],
-        id: int,
-        wear: float | None = None,
-        scale: float | None = None,
-        rotation: float | None = None,
-        tint_id: float | None = None,
-    ):
-        self.slot = slot
-        self.id = id
-        self.wear = wear
-        self.scale = scale
-        self.rotation = rotation
-        self.tint_id = tint_id
-
-    _decodeable_attrs = (
-        "wear",
-        "scale",
-        "rotation",
-    )
+__all__ = (
+    "BaseUser",
+    "User",
+    "ClientUser",
+    "ProfileInfo",
+)
 
 
 class MatchInfo:
@@ -72,8 +53,7 @@ class MatchInfo:
 
     async def server(self) -> GameServer:
         server = await self._state.client.fetch_server(ip=str(self.server_ip))
-        if server is None:
-            assert_never()
+        assert server is not None
         return server
 
 
@@ -91,7 +71,7 @@ class BaseUser(abc.BaseUser):
     async def csgo_profile(self) -> ProfileInfo[Self]:
         msg = await self._state.fetch_user_csgo_profile(self.id)
         if not msg.account_profiles:
-            assert_never()
+            raise ValueError
         return ProfileInfo(self, msg.account_profiles[0])
 
 

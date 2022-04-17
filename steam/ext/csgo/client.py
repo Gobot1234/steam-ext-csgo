@@ -16,9 +16,9 @@ from ...invite import ClanInvite, UserInvite
 from ...protobufs import GCMsgProto
 from ...trade import TradeOffer
 from .._gc import Client as Client_
-from .backpack import BackpackItem, Paint
+from .backpack import BackpackItem, Paint, Sticker
 from .enums import ItemOrigin, ItemQuality, Language
-from .models import ClientUser, Sticker, User
+from .models import ClientUser, User
 from .protobufs import cstrike
 from .state import GCState
 
@@ -36,6 +36,13 @@ __all__ = (
 
 
 class Client(Client_):
+    """Represents a client connection that connects to Steam. This class is used to interact with the Steam API, CMs
+    and the CSGO Game Coordinator.
+
+    :class:`Client` is a subclass of :class:`steam.Client`, so whatever you can do with :class:`steam.Client` you can
+    do with :class:`Client`.
+    """
+
     _GAME: Final = CSGO
     user: ClientUser
     _connection: GCState
@@ -101,7 +108,7 @@ class Client(Client_):
         elif owner is None and market_id == 0:
             raise TypeError("Missing required keyword-only argument: 'owner' or 'market_id'")
         elif d == 0 or asset_id == 0:
-            raise TypeError(f"Missing required keyword-only argument: {'d' if not d else 'asset_id'}")
+            raise TypeError(f"Missing required keyword-only argument: {'asset_id' if d else 'd'}")
 
         future = self._connection.gc_wait_for(
             Language.Client2GCEconPreviewDataBlockResponse,
@@ -365,4 +372,8 @@ class Client(Client_):
 
 
 class Bot(commands.Bot, Client):
-    ...
+    """Represents a Steam bot.
+
+    :class:`Bot` is a subclass of :class:`~steam.ext.commands.Bot`, so whatever you can do with
+    :class:`~steam.ext.commands.Bot` you can do with :class:`Bot`.
+    """
