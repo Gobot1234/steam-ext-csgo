@@ -62,10 +62,11 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install
-      working-directory: ./${{ github.event.repository.name }}
+      # working-directory: ./${{ github.event.repository.name }}
       uses: snok/install-poetry@v1
       with:
         version: 1.2.0a2
+
     - name: Install Pt. 2
       working-directory: ./${{ github.event.repository.name }}
       run: |
