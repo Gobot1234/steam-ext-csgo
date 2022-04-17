@@ -32,7 +32,6 @@ jobs:
 
       COMMIT_MESSAGE: update docs for ${{ github.repository }}
 
-      PULL_INSTALL: .[docs]
       PULL_PATH: docs
 
       PUSH_REPOSITORY: steam-py/steam-py.github.io
@@ -67,7 +66,7 @@ jobs:
         version: 1.2.0a2
 
     - name: Install Pt. 2
-      working-directory: ./${{ github.event.repository.name }}
+      # working-directory: ./${{ github.event.repository.name }}
       run: |
         poetry install --with docs
 
