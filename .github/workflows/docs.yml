@@ -77,7 +77,9 @@ jobs:
         echo "Here"
         ls .
         ls ..
-        poetry run python -m sphinx ${{ env.SPHINX_OPTIONS }} ./${{ github.event.repository.name }}/${{ env.PULL_PATH }} ./docs/${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }}
+        cd ${{ github.event.repository.name }}
+        poetry run python -m sphinx ${{ env.SPHINX_OPTIONS }} ../${{ github.event.repository.name }}/${{ env.PULL_PATH }} ../docs/${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }}
+        cd ..
         echo "here"
         x=${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }}; y=$x; while [ $y != ${y%/*} ]; do y=${y%/*}; echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url='"${x#$y/}"'" /></head><body></body></html>' > ./docs/$y/index.html; done
         if [ ! -f ./docs/index.json ]; then echo {} > ./docs/index.json ; fi
