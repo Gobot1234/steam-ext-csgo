@@ -66,7 +66,7 @@ jobs:
         version: 1.2.0a2
 
     - name: Install Pt. 2
-      # working-directory: ./${{ github.event.repository.name }}
+      working-directory: ./${{ github.event.repository.name }}
       run: |
         poetry install --with docs
 
@@ -74,7 +74,11 @@ jobs:
       if: ${{ github.event_name == 'push' }}
       run: |
         if [ -d ./docs/${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }} ]; then rm -r ./docs/${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }}; fi
+        echo "Here"
+        ls .
+        ls ..
         poetry run python -m sphinx ${{ env.SPHINX_OPTIONS }} ./${{ github.event.repository.name }}/${{ env.PULL_PATH }} ./docs/${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }}
+        echo "here"
         x=${{ env.PUSH_ROOT_PATH }}/${{ env.PUSH_LATEST_PATH }}; y=$x; while [ $y != ${y%/*} ]; do y=${y%/*}; echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url='"${x#$y/}"'" /></head><body></body></html>' > ./docs/$y/index.html; done
         if [ ! -f ./docs/index.json ]; then echo {} > ./docs/index.json ; fi
         jq 'if has("'"${{ env.PUSH_ROOT_PATH }}"'") then (.'"${{ env.PUSH_ROOT_PATH }}"'.latest = "${{ env.PUSH_LATEST_PATH }}" | .'"${{ env.PUSH_ROOT_PATH }}"'.stable = "${{ env.PUSH_STABLE_PATH }}") else (.'"${{ env.PUSH_ROOT_PATH }}"' = {latest: "${{ env.PUSH_LATEST_PATH }}", stable: "${{ env.PUSH_STABLE_PATH }}", tags: []}) end' ./docs/index.json > ./docs/temp.json
