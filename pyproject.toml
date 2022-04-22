@@ -61,5 +61,5 @@ ensure_newline_before_comments = true
 typeCheckingMode = "basic"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core==1.1.0a7"]  # ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
