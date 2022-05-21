@@ -13,6 +13,7 @@ from ...game import CSGO, Game
 from ...game_server import GameServer
 from ...protobufs import GCMsgProto
 from ...trade import Inventory
+from .._gc.client import ClientUser as ClientUser_
 from .enums import Language
 from .protobufs import cstrike
 
@@ -89,7 +90,7 @@ class User(BaseUser, user.User):
         )
 
 
-class ClientUser(BaseUser, user.ClientUser):
+class ClientUser(BaseUser, ClientUser_):
     __slots__ = ("_profile_info_msg",)
 
     if TYPE_CHECKING:

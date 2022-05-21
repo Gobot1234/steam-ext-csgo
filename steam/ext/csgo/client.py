@@ -44,6 +44,7 @@ class Client(Client_):
     """
 
     _GAME: Final = CSGO
+    _ClientUserCls = ClientUser
     user: ClientUser
     _connection: GCState
     _GC_HEART_BEAT = 10.0
@@ -53,10 +54,6 @@ class Client(Client_):
 
     def _get_gc_message(self) -> GCMsgProto[ClientHello]:
         return GCMsgProto(Language.ClientHello)
-
-    async def _handle_ready(self) -> None:
-        self.http.user = ClientUser(self._connection, await self.http.get_user(self.user.id64))
-        await super()._handle_ready()
 
     @overload
     async def inspect_item(self, *, owner: SteamID, asset_id: int, d: int) -> BaseInspectedItem:
