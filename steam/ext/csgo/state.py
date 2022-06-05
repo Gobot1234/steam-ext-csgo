@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from ... import utils
-from ...abc import UserDict
 from ...gateway import READ_U32
 from ...models import register
 from ...protobufs import GCMsgProto
@@ -22,6 +21,7 @@ from .protobufs import base, cstrike, sdk
 
 if TYPE_CHECKING:
     from .client import Client
+    from ...types.user import UserDict
 
 log = logging.getLogger(__name__)
 READ_F32 = struct.Struct("<f").unpack_from
