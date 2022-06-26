@@ -21,6 +21,7 @@ from .protobufs import base, cstrike, sdk
 if TYPE_CHECKING:
     from ...types import user
     from .client import Client
+    from ...types.user import UserDict
 
 log = logging.getLogger(__name__)
 
