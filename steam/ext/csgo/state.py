@@ -10,8 +10,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from ... import utils
-from ...abc import UserDict
-from ...gateway import READ_U32
 from ...models import register
 from ...protobufs import GCMsgProto
 from .._gc import GCState as GCState_
@@ -21,10 +19,20 @@ from .models import User
 from .protobufs import base, cstrike, sdk
 
 if TYPE_CHECKING:
+    from ...types import user
     from .client import Client
 
 log = logging.getLogger(__name__)
-READ_F32 = struct.Struct("<f").unpack_from
+
+
+def READ_F32(bytes: bytes, *, _unpacker: Callable[[bytes], tuple[float]] = struct.Struct("<f").unpack_from) -> float:
+    (f32,) = _unpacker(bytes)
+    return f32
+
+
+def READ_U32(bytes: bytes, *, _unpacker: Callable[[bytes], tuple[int]] = struct.Struct("<I").unpack_from) -> int:
+    (u32,) = _unpacker(bytes)
+    return u32
 
 
 class GCState(GCState_):
@@ -38,7 +46,7 @@ class GCState(GCState_):
         super().__init__(client, **kwargs)
         self.casket_items: dict[int, CasketItem] = {}
 
-    def _store_user(self, data: UserDict) -> User:
+    def _store_user(self, data: user.User) -> User:
         try:
             user = self._users[int(data["steamid"])]
         except KeyError:
@@ -93,7 +101,7 @@ class GCState(GCState_):
                 is_casket_item = True
                 gc_item = utils.update_class(gc_item, CasketItem())
                 gc_item.casket_id = int(
-                    f"{READ_U32(casket_id_high.value_bytes)[0]:032b}{READ_U32(casket_id_low.value_bytes)[0]:032b}",
+                    f"{READ_U32(casket_id_high.value_bytes):032b}{READ_U32(casket_id_low.value_bytes):032b}",
                     base=2,
                 )
             else:
@@ -113,28 +121,29 @@ class GCState(GCState_):
             if any((paint_index, paint_seed, paint_wear)):
                 paint = Paint()
                 self.set("paint", paint)
+            # type ignores as pyright thinks paint can be unbound
             if paint_index:
-                (paint.index,) = READ_F32(paint_index.value_bytes)
+                paint.index = READ_F32(paint_index.value_bytes)  # type: ignore
             if paint_seed:
-                paint.seed = math.floor(*READ_F32(paint_seed.value_bytes))
+                paint.seed = math.floor(READ_F32(paint_seed.value_bytes))  # type: ignore
             if paint_wear:
-                (paint.wear,) = READ_F32(paint_wear.value_bytes)
+                (paint.wear) = READ_F32(paint_wear.value_bytes)  # type: ignore
 
             tradable_after_date = utils.get(gc_item.attribute, def_index=75)
             if tradable_after_date:
-                self.set("tradable_after", datetime.utcfromtimestamp(READ_U32(tradable_after_date.value_bytes)[0]))
+                self.set("tradable_after", datetime.utcfromtimestamp(READ_U32(tradable_after_date.value_bytes)))
 
             stickers = []
             self.set("stickers", stickers)
             for i in range(4, 24, 4):
                 sticker_id = utils.get(gc_item.attribute, def_index=113 + i)
                 if sticker_id:
-                    sticker = Sticker(slot=i, id=READ_U32(sticker_id.value_bytes)[0])  # type: ignore
+                    sticker = Sticker(slot=i, id=READ_U32(sticker_id.value_bytes))  # type: ignore
 
                     for idx, attr in enumerate(Sticker._decodeable_attrs):
                         attribute = utils.get(gc_item.attribute, def_index=114 + i + idx)
                         if attribute:
-                            setattr(sticker, attr, READ_F32(attribute.value_bytes)[0])
+                            setattr(sticker, attr, READ_F32(attribute.value_bytes))
 
                     stickers.append(sticker)
 
@@ -145,9 +154,10 @@ class GCState(GCState_):
             if gc_item.def_index == 1201:  # storage unit
                 assert item is not None
                 item = utils.update_class(item, Casket.__new__(Casket))  # __class__ assignment doesn't work here
-                backpack.items[backpack.items.index(item)] = item  # type: ignore
+                orig_idx = backpack.items.index(item)
+                backpack.items[orig_idx] = item  # type: ignore  # typed as a Sequence not a list
                 item_count = utils.get(gc_item.attribute, def_index=270)
-                self.set("contained_item_count", READ_U32(item_count.value_bytes)[0] if item_count is not None else 0)
+                self.set("contained_item_count", READ_U32(item_count.value_bytes) if item_count is not None else 0)
 
             elif isinstance(gc_item, CasketItem):
                 self.casket_items[gc_item.id] = gc_item

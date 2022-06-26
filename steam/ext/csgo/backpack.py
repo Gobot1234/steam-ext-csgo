@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from abc import ABCMeta
 from dataclasses import dataclass
+from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -245,9 +246,9 @@ else:
 def has_to_be_in_our_inventory(func):
     func.__doc__ += """
 
-Note
-----
-For this method to work the item has to be in the client's backpack.
+    Note
+    ----
+    For this method to work the item has to be in the client's backpack.
     """
     return func
 
@@ -309,7 +310,7 @@ class BackpackItem(BaseBackpackItem):
 
         Note
         ----
-        This mutates ``self`` in a way that attributes avaliable on the :class:`InspectedItem` are available on
+        This mutates ``self`` in a way that attributes available on the :class:`InspectedItem` are available on
         ``self``.
         """
         inspect_url = self.inspect_url
@@ -387,7 +388,7 @@ class Casket(BackpackItem):
         if len(contained_items) == self.contained_item_count:
             return contained_items
 
-        future = self._state.gc_wait_for(
+        future: asyncio.Future[GCMsgProto[ItemCustomizationNotificationProto]] = self._state.gc_wait_for(
             Language.ItemCustomizationNotification,
             check=lambda msg: (
                 msg.body.request == ItemCustomizationNotificationEnum.CasketContents and msg.body.item_id[0] == self.id
@@ -397,7 +398,7 @@ class Casket(BackpackItem):
             GCMsgProto(Language.CasketItemLoadContents, casket_item_id=self.id, item_item_id=self.id)
         )
 
-        notification: GCMsgProto[ItemCustomizationNotificationProto] = await future  # type: ignore
+        notification = await future
 
         items = []
         for casket_item_id in notification.body.item_id[1:]:
@@ -433,10 +434,16 @@ class Casket(BackpackItem):
 
 class _FakeNameTag(BackpackItem):
     id = 0
+    __slots__ = ()
 
     def __init__(self, *_, **__):
         pass
 
 
-Backpack: TypeAlias = BaseInventory[BackpackItem]
-"""A class to represent the client's backpack."""
+class Backpack(BaseInventory[BackpackItem]):
+    """A class to represent the client's backpack."""
+
+    @property
+    def caskets(self) -> Sequence[Casket]:
+        """The caskets in this backpack."""
+        return [item for item in self if isinstance(item, Casket)]
