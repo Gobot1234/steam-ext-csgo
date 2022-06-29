@@ -9,6 +9,7 @@ import sys
 from collections.abc import Callable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
+import warnings
 
 from ... import utils
 from ...models import register
@@ -154,8 +155,10 @@ class GCState(GCState_):
 
             if gc_item.def_index == 1201:  # storage unit
                 assert item is not None
-                item = utils.update_class(item, Casket.__new__(Casket))  # __class__ assignment doesn't work here
                 orig_idx = backpack.items.index(item)
+                with warnings.catch_warnings():
+                    item = utils.update_class(item, Casket.__new__(Casket))  # __class__ assignment doesn't work here
+                assert isinstance(item, Casket)
                 backpack.items[orig_idx] = item  # type: ignore  # typed as a Sequence not a list
                 item_count = utils.get(gc_item.attribute, def_index=270)
                 self.set("contained_item_count", READ_U32(item_count.value_bytes) if item_count is not None else 0)
