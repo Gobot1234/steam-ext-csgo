@@ -16,7 +16,7 @@ class BackpackItemConverter(
         except ValueError:
             item = steam.utils.get(backpack, name=argument)
         else:
-            item = steam.utils.get(backpack, asset_id=asset_id)
+            item = steam.utils.get(backpack, id=asset_id)
 
         if item is None:
             raise commands.BadArgument(f"{argument!r} is not present in the backpack")
