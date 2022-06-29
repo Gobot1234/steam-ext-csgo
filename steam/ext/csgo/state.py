@@ -161,7 +161,7 @@ class GCState(GCState_):
                 self.set("contained_item_count", READ_U32(item_count.value_bytes) if item_count is not None else 0)
 
             elif not isinstance(gc_item, CasketItem) and gc_item.id in self.casket_items:
-                self.casket_items.pop(gc_item.id)
+                del self.casket_items[gc_item.id]
 
             elif isinstance(gc_item, CasketItem):
                 self.casket_items[gc_item.id] = gc_item
