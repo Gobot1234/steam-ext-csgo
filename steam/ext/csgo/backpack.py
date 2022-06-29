@@ -1,9 +1,11 @@
+"""Licensed under The MIT License (MIT) - Copyright (c) 2020-present James H-B. See LICENSE"""
+
 from __future__ import annotations
 
 import asyncio
 from abc import ABCMeta
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -372,9 +374,9 @@ class Casket(BackpackItem):
         )
         await future
 
-        backpack_item = utils.get(self._state.backpack, asset_id=item.id)
+        backpack_item = utils.get(self._state.backpack, id=item.id)
         while backpack_item is None:
-            backpack_item = utils.get(self._state.backpack, asset_id=item.id)
+            backpack_item = utils.get(self._state.backpack, id=item.id)
             await asyncio.sleep(0)
 
         return backpack_item

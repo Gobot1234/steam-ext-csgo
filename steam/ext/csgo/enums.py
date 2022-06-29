@@ -1,3 +1,5 @@
+"""Licensed under The MIT License (MIT) - Copyright (c) 2020-present James H-B. See LICENSE"""
+
 from ...enums import Flags, IntEnum
 
 __all__ = ("ItemQuality", "ItemFlags", "ItemOrigin")

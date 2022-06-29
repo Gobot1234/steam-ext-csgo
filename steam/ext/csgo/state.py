@@ -1,6 +1,7 @@
+"""Licensed under The MIT License (MIT) - Copyright (c) 2020-present James H-B. See LICENSE"""
+
 from __future__ import annotations
 
-import asyncio
 import logging
 import math
 import struct
@@ -21,7 +22,6 @@ from .protobufs import base, cstrike, sdk
 if TYPE_CHECKING:
     from ...types import user
     from .client import Client
-    from ...types.user import UserDict
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class GCState(GCState_):
         backpack = self.backpack if self.backpack is not None else await self.fetch_backpack(Backpack)
 
         for gc_item in gc_items:  # merge the two items
-            item = utils.get(backpack, asset_id=gc_item.id)
+            item = utils.get(backpack, id=gc_item.id)
             is_casket_item = False
             if item is None:
                 # is the item contained in a casket?
@@ -191,7 +191,7 @@ class GCState(GCState_):
 
         cso_item = base.Item().parse(msg.body.object_data)
         self.backpack = await self.fetch_backpack(Backpack)  # refresh the backpack
-        item = utils.get(self.backpack, asset_id=cso_item.id)
+        item = utils.get(self.backpack, id=cso_item.id)
 
         if item is None and not (
             utils.get(cso_item.attribute, def_index=272) and utils.get(cso_item.attribute, def_index=273)
@@ -221,10 +221,10 @@ class GCState(GCState_):
 
         cso_item = base.Item().parse(object.object_data)
 
-        before = utils.get(self.backpack, asset_id=cso_item.id)
+        before = utils.get(self.backpack, id=cso_item.id)
         if before is None:
             return log.info("Received an item that isn't our inventory %r", cso_item)
-        after = utils.get(await self.update_backpack(cso_item), asset_id=cso_item.id)
+        after = utils.get(await self.update_backpack(cso_item), id=cso_item.id)
         self.dispatch("item_update", before, after)
 
     @register(Language.SODestroy)
@@ -233,7 +233,7 @@ class GCState(GCState_):
             return
 
         deleted_item = base.Item().parse(msg.body.object_data)
-        item = utils.get(self.backpack, asset_id=deleted_item.id)
+        item = utils.get(self.backpack, id=deleted_item.id)
         if item is None:
             return log.info("Received an item that isn't our inventory %r", deleted_item)
         for attribute_name in deleted_item.__annotations__:
