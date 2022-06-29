@@ -348,6 +348,7 @@ class Casket(BackpackItem):
             GCMsgProto(Language.CasketItemAdd, casket_item_id=self.id, item_item_id=item.id)
         )
         await future
+        self.contained_item_count += 1
 
     async def remove(self, item: CasketItem) -> BackpackItem:
         """Remove an item from this casket.
@@ -373,6 +374,7 @@ class Casket(BackpackItem):
             GCMsgProto(Language.CasketItemExtract, casket_item_id=self.id, item_item_id=item.id)
         )
         await future
+        self.contained_item_count -= 1
 
         backpack_item = utils.get(self._state.backpack, id=item.id)
         while backpack_item is None:
