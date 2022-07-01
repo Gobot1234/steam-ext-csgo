@@ -157,6 +157,7 @@ class GCState(GCState_):
                 assert item is not None
                 orig_idx = backpack.items.index(item)
                 with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", DeprecationWarning)  # ignore accessing asset_id
                     item = utils.update_class(item, Casket.__new__(Casket))  # __class__ assignment doesn't work here
                 assert isinstance(item, Casket)
                 backpack.items[orig_idx] = item  # type: ignore  # typed as a Sequence not a list
