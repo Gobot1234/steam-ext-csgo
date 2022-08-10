@@ -16,13 +16,13 @@ from ...game_server import GameServer
 from ...protobufs import GCMsgProto
 from ...trade import Inventory
 from .._gc.client import ClientUser as ClientUser_
+from ..commands.converters import Converter, UserConverter
 from .enums import Language
 from .protobufs import cstrike
 
 if TYPE_CHECKING:
     from .backpack import Backpack
     from .state import GCState
-
 
 UserT = TypeVar("UserT", bound=abc.BaseUser)
 
@@ -141,3 +141,7 @@ class ProfileInfo(Generic[UserT]):
 
     def __repr__(self) -> str:
         return f"<ProfileInfo user={self.user!r}>"
+
+
+class CSGOUserConverter(Converter[User]):
+    convert = UserConverter.convert
