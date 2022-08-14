@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar, overload
 from typing_extensions import Literal, Self
 
 from ... import abc, user
-from ...game import CSGO, Game
+from ...app import CSGO, App
 from ...game_server import GameServer
 from ...protobufs import GCMsgProto
 from ...trade import Inventory
@@ -21,6 +21,7 @@ from .enums import Language
 from .protobufs import cstrike
 
 if TYPE_CHECKING:
+    from ...enums import Language
     from .backpack import Backpack
     from .state import GCState
 
@@ -98,11 +99,11 @@ class ClientUser(BaseUser, ClientUser_):
     if TYPE_CHECKING:
 
         @overload
-        async def inventory(self, game: Literal[CSGO]) -> Backpack:  # type: ignore
+        async def inventory(self, app: Literal[CSGO], *, language: Language | None = None) -> Backpack:  # type: ignore
             ...
 
         @overload
-        async def inventory(self, game: Game) -> Inventory:  # type: ignore
+        async def inventory(self, app: App, *, language: Language | None = None) -> Inventory:  # type: ignore
             ...
 
     async def csgo_profile(self) -> ProfileInfo[Self]:
