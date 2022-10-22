@@ -12,7 +12,7 @@ from typing_extensions import Final, Literal
 from ... import utils
 from ...abc import Message, SteamID
 from ...ext import commands
-from ...game import CSGO
+from ...app import CSGO
 from ...gateway import GCMsgsT, Msgs
 from ...invite import ClanInvite, UserInvite
 from ...protobufs import GCMsgProto
@@ -45,7 +45,7 @@ class Client(Client_):
     do with :class:`Client`.
     """
 
-    _GAME: Final = CSGO
+    _APP: Final = CSGO
     _ClientUserCls = ClientUser
     user: ClientUser
     _connection: GCState
