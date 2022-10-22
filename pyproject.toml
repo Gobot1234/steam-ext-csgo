@@ -25,7 +25,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-steamio = {git = "https://github.com/Gobot1234/steam.py.git", rev = "main"}
+steamio = "^0.9"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.3"
