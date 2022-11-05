@@ -7,6 +7,8 @@ from typing import List, Optional
 
 import betterproto
 
+from ....protobufs.msg import GCProtobufMessage
+from ..enums import Language
 from .engine import GotvSyncPacket
 
 
@@ -509,8 +511,7 @@ class MatchmakingClient2GcHello(betterproto.Message):
     pass
 
 
-@dataclass(eq=False, repr=False)
-class MatchmakingClientHello(betterproto.Message):
+class MatchmakingClientHello(GCProtobufMessage, msg=Language.MatchmakingGC2ClientHello):
     account_id: int = betterproto.uint32_field(1)
     ongoingmatch: "MatchmakingClientReserve" = betterproto.message_field(2)
     global_stats: "GlobalStatistics" = betterproto.message_field(3)
@@ -610,8 +611,7 @@ class ClientReportResponse(betterproto.Message):
     tokens: int = betterproto.uint32_field(6)
 
 
-@dataclass(eq=False, repr=False)
-class ClientRequestWatchInfoFriends(betterproto.Message):
+class ClientRequestWatchInfoFriends(GCProtobufMessage, msg=Language.ClientRequestWatchInfoFriends2):
     request_id: int = betterproto.uint32_field(1)
     account_ids: List[int] = betterproto.uint32_field(2)
     serverid: int = betterproto.uint64_field(3)
@@ -710,16 +710,14 @@ class WatchInfoUsers(betterproto.Message):
     extended_timeout: int = betterproto.uint32_field(5)
 
 
-@dataclass(eq=False, repr=False)
-class ClientRequestPlayersProfile(betterproto.Message):
+class ClientRequestPlayersProfile(GCProtobufMessage, msg=Language.ClientRequestPlayersProfile):
     request_id_deprecated: int = betterproto.uint32_field(1)
     account_ids_deprecated: List[int] = betterproto.uint32_field(2)
     account_id: int = betterproto.uint32_field(3)
     request_level: int = betterproto.uint32_field(4)
 
 
-@dataclass(eq=False, repr=False)
-class PlayersProfile(betterproto.Message):
+class PlayersProfile(GCProtobufMessage, msg=Language.PlayersProfile):
     request_id: int = betterproto.uint32_field(1)
     account_profiles: List["MatchmakingClientHello"] = betterproto.message_field(2)
 
@@ -824,16 +822,14 @@ class ItemAcknowledged(betterproto.Message):
     iteminfo: "PreviewDataBlock" = betterproto.message_field(1)
 
 
-@dataclass(eq=False, repr=False)
-class Client2GcEconPreviewDataBlockRequest(betterproto.Message):
+class Client2GcEconPreviewDataBlockRequest(GCProtobufMessage, msg=Language.Client2GCEconPreviewDataBlockRequest):
     param_s: int = betterproto.uint64_field(1)
     param_a: int = betterproto.uint64_field(2)
     param_d: int = betterproto.uint64_field(3)
     param_m: int = betterproto.uint64_field(4)
 
 
-@dataclass(eq=False, repr=False)
-class Client2GcEconPreviewDataBlockResponse(betterproto.Message):
+class Client2GcEconPreviewDataBlockResponse(GCProtobufMessage, msg=Language.Client2GCEconPreviewDataBlockResponse):
     iteminfo: "PreviewDataBlock" = betterproto.message_field(1)
 
 
@@ -847,8 +843,7 @@ class MatchListRequestLiveGameForUser(betterproto.Message):
     accountid: int = betterproto.uint32_field(1)
 
 
-@dataclass(eq=False, repr=False)
-class MatchListRequestRecentUserGames(betterproto.Message):
+class MatchListRequestRecentUserGames(GCProtobufMessage, msg=Language.MatchListRequestRecentUserGames):
     accountid: int = betterproto.uint32_field(1)
 
 
@@ -914,8 +909,7 @@ class TournamentInfo(betterproto.Message):
     tournament_teams: List["TournamentTeam"] = betterproto.message_field(3)
 
 
-@dataclass(eq=False, repr=False)
-class MatchList(betterproto.Message):
+class MatchList(GCProtobufMessage, msg=Language.MatchList):
     msgrequestid: int = betterproto.uint32_field(1)
     accountid: int = betterproto.uint32_field(2)
     servertime: int = betterproto.uint32_field(3)
@@ -1121,7 +1115,7 @@ class ClientAuthKeyCode(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class GotvSyncPacket(betterproto.Message):
+class StrikeGotvSyncPacket(betterproto.Message):
     data: "GotvSyncPacket" = betterproto.message_field(1)
 
 

@@ -7,6 +7,9 @@ from typing import List
 
 import betterproto
 
+from ....protobufs.msg import GCProtobufMessage
+from ..enums import Language
+
 
 @dataclass(eq=False, repr=False)
 class GiftedItems(betterproto.Message):
@@ -23,8 +26,17 @@ class ApplyAutograph(betterproto.Message):
     item_item_id: int = betterproto.uint64_field(2)
 
 
-@dataclass(eq=False, repr=False)
-class CasketItem(betterproto.Message):
+class CasketItemAdd(GCProtobufMessage, msg=Language.CasketItemAdd):
+    casket_item_id: int = betterproto.uint64_field(1)
+    item_item_id: int = betterproto.uint64_field(2)
+
+
+class CasketItemExtract(GCProtobufMessage, msg=Language.CasketItemExtract):
+    casket_item_id: int = betterproto.uint64_field(1)
+    item_item_id: int = betterproto.uint64_field(2)
+
+
+class CasketItemLoadContents(GCProtobufMessage, msg=Language.CasketItemLoadContents):
     casket_item_id: int = betterproto.uint64_field(1)
     item_item_id: int = betterproto.uint64_field(2)
 
@@ -34,7 +46,6 @@ class UserTrackTimePlayedConsecutively(betterproto.Message):
     state: int = betterproto.uint32_field(1)
 
 
-@dataclass(eq=False, repr=False)
-class ItemCustomizationNotification(betterproto.Message):
+class ItemCustomizationNotification(GCProtobufMessage, msg=Language.ItemCustomizationNotification):
     item_id: List[int] = betterproto.uint64_field(1)
     request: int = betterproto.uint32_field(2)

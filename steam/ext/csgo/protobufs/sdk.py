@@ -7,6 +7,9 @@ from typing import List
 
 import betterproto
 
+from ....protobufs.msg import GCProtobufMessage
+from ..enums import Language
+
 
 class GcClientLauncherType(betterproto.Enum):
     Default = 0
@@ -28,16 +31,28 @@ class IDOwner(betterproto.Message):
     id: int = betterproto.uint64_field(2)
 
 
-@dataclass(eq=False, repr=False)
-class SingleObject(betterproto.Message):
+class SOCreate(GCProtobufMessage, msg=Language.SOCreate):
     type_id: int = betterproto.int32_field(2)
     object_data: bytes = betterproto.bytes_field(3)
     version: int = betterproto.fixed64_field(4)
     owner_soid: "IDOwner" = betterproto.message_field(5)
 
 
-@dataclass(eq=False, repr=False)
-class MultipleObjects(betterproto.Message):
+class SOUpdate(GCProtobufMessage, msg=Language.SOUpdate):
+    type_id: int = betterproto.int32_field(2)
+    object_data: bytes = betterproto.bytes_field(3)
+    version: int = betterproto.fixed64_field(4)
+    owner_soid: "IDOwner" = betterproto.message_field(5)
+
+
+class SODestroy(GCProtobufMessage, msg=Language.SODestroy):
+    type_id: int = betterproto.int32_field(2)
+    object_data: bytes = betterproto.bytes_field(3)
+    version: int = betterproto.fixed64_field(4)
+    owner_soid: "IDOwner" = betterproto.message_field(5)
+
+
+class MultipleObjects(GCProtobufMessage, msg=Language.SOUpdateMultiple):
     objects_modified: List["MultipleObjectsSingleObject"] = betterproto.message_field(2)
     version: int = betterproto.fixed64_field(3)
     owner_soid: "IDOwner" = betterproto.message_field(6)
@@ -170,8 +185,7 @@ class CacheHaveVersion(betterproto.Message):
     version: int = betterproto.fixed64_field(2)
 
 
-@dataclass(eq=False, repr=False)
-class ClientHello(betterproto.Message):
+class ClientHello(GCProtobufMessage, msg=Language.ClientHello):
     version: int = betterproto.uint32_field(1)
     socache_have_versions: List["CacheHaveVersion"] = betterproto.message_field(2)
     client_session_need: int = betterproto.uint32_field(3)
@@ -194,8 +208,7 @@ class ServerHello(betterproto.Message):
     steamdatagram_login: bytes = betterproto.bytes_field(8)
 
 
-@dataclass(eq=False, repr=False)
-class ClientWelcome(betterproto.Message):
+class ClientWelcome(GCProtobufMessage, msg=Language.ClientWelcome):
     version: int = betterproto.uint32_field(1)
     game_data: bytes = betterproto.bytes_field(2)
     outofdate_subscribed_caches: List["CacheSubscribed"] = betterproto.message_field(3)
@@ -216,8 +229,7 @@ class ClientWelcomeLocation(betterproto.Message):
     country: str = betterproto.string_field(3)
 
 
-@dataclass(eq=False, repr=False)
-class ConnectionStatus(betterproto.Message):
+class ConnectionStatus(GCProtobufMessage, msg=Language.ClientConnectionStatus):
     status: "GcConnectionStatus" = betterproto.enum_field(1)
     client_session_need: int = betterproto.uint32_field(2)
     queue_position: int = betterproto.int32_field(3)

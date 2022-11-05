@@ -10,16 +10,16 @@ from typing import TYPE_CHECKING, Any, overload
 from typing_extensions import Final, Literal
 
 from ... import utils
-from ...abc import Message, SteamID
-from ...ext import commands
+from ...abc import Message
 from ...app import CSGO
+from ...ext import commands
 from ...gateway import GCMsgsT, Msgs
+from ...id import ID
 from ...invite import ClanInvite, UserInvite
-from ...protobufs import GCMsgProto
 from ...trade import TradeOffer
 from .._gc import Client as Client_
 from .backpack import BackpackItem, Paint, Sticker
-from .enums import ItemOrigin, ItemQuality, Language
+from .enums import ItemOrigin, ItemQuality
 from .models import ClientUser, User
 from .protobufs import cstrike
 from .state import GCState
@@ -54,11 +54,11 @@ class Client(Client_):
     def _get_state(self, **options: Any) -> GCState:
         return GCState(client=self, **options)
 
-    def _get_gc_message(self) -> GCMsgProto[ClientHello]:
-        return GCMsgProto(Language.ClientHello)
+    def _get_gc_message(self) -> ClientHello:
+        return ClientHello()
 
     @overload
-    async def inspect_item(self, *, owner: SteamID, asset_id: int, d: int) -> BaseInspectedItem:
+    async def inspect_item(self, *, owner: ID, asset_id: int, d: int) -> BaseInspectedItem:
         ...
 
     @overload
@@ -72,7 +72,7 @@ class Client(Client_):
     async def inspect_item(
         self,
         *,
-        owner: SteamID | None = None,
+        owner: ID | None = None,
         asset_id: int = 0,
         d: int = 0,
         market_id: int = 0,
@@ -99,7 +99,7 @@ class Client(Client_):
             if search is None:
                 raise ValueError("Inspect url is invalid")
 
-            owner = SteamID(int(search[1]) if search[0].startswith("S") else 0)
+            owner = ID(int(search[1]) if search[0].startswith("S") else 0)
             market_id = int(search[1]) if search[0].startswith("M") else 0
             asset_id = int(search[2])
             d = int(search[3])
@@ -110,12 +110,12 @@ class Client(Client_):
             raise TypeError(f"Missing required keyword-only argument: {'asset_id' if d else 'd'}")
 
         future = self._connection.gc_wait_for(
-            Language.Client2GCEconPreviewDataBlockResponse,
-            check=lambda msg: msg.body.iteminfo.itemid == asset_id,
+            cstrike.Client2GcEconPreviewDataBlockResponse,
+            check=lambda msg: isinstance(msg, cstrike.Client2GcEconPreviewDataBlockResponse)
+            and msg.iteminfo.itemid == asset_id,
         )
-        await self.ws.send_gc_message(
-            GCMsgProto(
-                Language.Client2GCEconPreviewDataBlockRequest,
+        await self._state.ws.send_gc_message(
+            cstrike.Client2GcEconPreviewDataBlockRequest(
                 param_s=owner.id64 if owner else 0,
                 param_a=asset_id,
                 param_d=d,
@@ -123,7 +123,7 @@ class Client(Client_):
             )
         )
 
-        msg: GCMsgProto[cstrike.Client2GcEconPreviewDataBlockResponse] = await future  # type: ignore
+        msg = await future
 
         item = msg.body.iteminfo
         # decode the wear

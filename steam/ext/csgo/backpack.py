@@ -9,21 +9,17 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from typing_extensions import Literal, Self, TypeAlias
+from typing_extensions import Literal, Self
 
 from ... import utils
-from ..._const import DOCS_BUILDING
-from ...protobufs import GCMsg, GCMsgProto
 from ...trade import BaseInventory, Item
 from .enums import (
     ItemCustomizationNotification as ItemCustomizationNotificationEnum,
     ItemFlags,
     ItemOrigin,
     ItemQuality,
-    Language,
 )
-from .protobufs.base import Item as ProtoItem, ItemAttribute, ItemEquipped
-from .protobufs.econ import ItemCustomizationNotification as ItemCustomizationNotificationProto
+from .protobufs import base, econ, struct_messages
 
 if TYPE_CHECKING:
     from .state import GCState
@@ -101,7 +97,7 @@ class BaseItem(metaclass=ABCMeta):
         "paint",
         "tradable_after",
         "stickers",
-    ) + tuple(ProtoItem.__annotations__)
+    ) + tuple(base.Item.__annotations__)
 
     position: int
     """The item's position."""
@@ -133,9 +129,9 @@ class BaseItem(metaclass=ABCMeta):
     """The item's custom name."""
     custom_description: str
     """The item's custom description."""
-    attribute: list[ItemAttribute]
+    attribute: list[base.ItemAttribute]
     """The item's attribute."""
-    interior_item: ProtoItem
+    interior_item: base.Item
     """The item's interior item."""
     in_use: bool
     """Whether the item's in use."""
@@ -143,7 +139,7 @@ class BaseItem(metaclass=ABCMeta):
     """The item's style."""
     original_id: int
     """The item's original ID."""
-    equipped_state: list[ItemEquipped]
+    equipped_state: list[base.ItemEquipped]
     """The item's equipped state."""
     rarity: int
     """The item's rarity."""
@@ -279,29 +275,29 @@ class BackpackItem(BaseBackpackItem):
             The tag to consume for this request.
         """
         future = self._state.gc_wait_for(
-            Language.ItemCustomizationNotification,
+            econ.ItemCustomizationNotification,
             check=lambda msg: (
-                msg.body.request == ItemCustomizationNotificationEnum.NameItem and msg.body.item_id[0] == self.id
+                isinstance(msg, econ.ItemCustomizationNotification)
+                and msg.request == ItemCustomizationNotificationEnum.NameItem
+                and msg.item_id[0] == self.id
             ),
         )
-        await self._state.ws.send_gc_message(GCMsg(Language.NameItem, name_tag_id=tag.id, item_id=self.id, name=name))
+        await self._state.ws.send_gc_message(struct_messages.NameItemRequest(name_tag_id=tag.id, item_id=self.id, name=name))
         await future
 
     @has_to_be_in_our_inventory
     async def delete(self) -> None:
         """Delete this item."""
-        await self._state.ws.send_gc_message(GCMsg(Language.Delete, item_id=self.id))
+        await self._state.ws.send_gc_message(struct_messages.DeleteItemRequest(item_id=self.id))
 
     @property
     def inspect_url(self) -> str | None:
         """The inspect url of item if it's inspectable."""
         try:
             for action in self.actions:
-                if "inspect" in action["name"].lower():
-                    return (
-                        action["link"]
-                        .replace("%owner_steamid%", str(self.owner.id64))
-                        .replace("%assetid%", str(self.id))
+                if "inspect" in action.name.lower():
+                    return action.link.replace("%owner_steamid%", str(self.owner.id64)).replace(
+                        "%assetid%", str(self.id)
                     )
 
         except (ValueError, KeyError):
@@ -340,13 +336,14 @@ class Casket(BackpackItem):
             The item to add.
         """
         future = self._state.gc_wait_for(
-            Language.ItemCustomizationNotification,
-            lambda msg: msg.body.request == ItemCustomizationNotificationEnum.CasketAdded
-            and msg.body.item_id[0] == self.id,
+            econ.ItemCustomizationNotification,
+            check=lambda msg: (
+                isinstance(msg, econ.ItemCustomizationNotification)
+                and msg.request == ItemCustomizationNotificationEnum.CasketAdded
+                and msg.item_id[0] == self.id
+            ),
         )
-        await self._state.ws.send_gc_message(
-            GCMsgProto(Language.CasketItemAdd, casket_item_id=self.id, item_item_id=item.id)
-        )
+        await self._state.ws.send_gc_message(econ.CasketItemAdd(casket_item_id=self.id, item_item_id=item.id))
         await future
         self.contained_item_count += 1
 
@@ -366,12 +363,14 @@ class Casket(BackpackItem):
             raise ValueError("item is not in this casket")
 
         future = self._state.gc_wait_for(
-            Language.ItemCustomizationNotification,
-            lambda msg: msg.body.request == ItemCustomizationNotificationEnum.CasketRemoved
-            and msg.body.item_id[0] == self.id,
+            econ.ItemCustomizationNotification,
+            check=lambda msg: (
+                isinstance(msg, econ.ItemCustomizationNotification)
+            and msg.request == ItemCustomizationNotificationEnum.CasketRemoved
+            and msg.item_id[0] == self.id),
         )
         await self._state.ws.send_gc_message(
-            GCMsgProto(Language.CasketItemExtract, casket_item_id=self.id, item_item_id=item.id)
+            econ.CasketItemExtract(casket_item_id=self.id, item_item_id=item.id)
         )
         await future
         self.contained_item_count -= 1
@@ -392,14 +391,14 @@ class Casket(BackpackItem):
         if len(contained_items) == self.contained_item_count:
             return contained_items
 
-        future: asyncio.Future[GCMsgProto[ItemCustomizationNotificationProto]] = self._state.gc_wait_for(
-            Language.ItemCustomizationNotification,
+        future = self._state.gc_wait_for(
+            econ.ItemCustomizationNotification,
             check=lambda msg: (
-                msg.body.request == ItemCustomizationNotificationEnum.CasketContents and msg.body.item_id[0] == self.id
+                isinstance(msg, econ.ItemCustomizationNotification) and msg.request == ItemCustomizationNotificationEnum.CasketContents and msg.item_id[0] == self.id
             ),
         )
         await self._state.ws.send_gc_message(
-            GCMsgProto(Language.CasketItemLoadContents, casket_item_id=self.id, item_item_id=self.id)
+            econ.CasketItemLoadContents(casket_item_id=self.id, item_item_id=self.id)
         )
 
         notification = await future

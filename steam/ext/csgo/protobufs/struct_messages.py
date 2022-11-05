@@ -1,9 +1,9 @@
-from steam.utils import StructIO
+from ....protobufs.msg import GCMessage
+from ....utils import StructIO
+from ..enums import Language
 
-from ....protobufs.struct_messages import StructMessage
 
-
-class NameItemRequest(StructMessage):
+class NameItemRequest(GCMessage, msg=Language.NameItem):
     name_tag_id: int
     item_id: int
     name: str
@@ -16,5 +16,5 @@ class NameItemRequest(StructMessage):
             return io.buffer
 
 
-class DeleteItemRequest(StructMessage):
+class DeleteItemRequest(GCMessage, msg=Language.Delete):
     item_id: int

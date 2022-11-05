@@ -13,17 +13,17 @@ from typing_extensions import Literal, Self
 from ... import abc, user
 from ...app import CSGO, App
 from ...game_server import GameServer
-from ...protobufs import GCMsgProto
 from ...trade import Inventory
 from .._gc.client import ClientUser as ClientUser_
 from ..commands.converters import Converter, UserConverter
 from .enums import Language
-from .protobufs import cstrike
 
 if TYPE_CHECKING:
     from ...enums import Language
     from .backpack import Backpack
+    from .protobufs import cstrike
     from .state import GCState
+
 
 UserT = TypeVar("UserT", bound=abc.BaseUser)
 
@@ -83,13 +83,13 @@ class User(BaseUser, user.User):
     __slots__ = ()
 
     async def recent_matches(self) -> Matches:
-        await self._state.ws.send_gc_message(GCMsgProto(Language.MatchListRequestRecentUserGames, accountid=self.id))
-        msg: GCMsgProto[cstrike.MatchList] = await self._state.gc_wait_for(
-            Language.MatchList, check=lambda msg: msg.body.accountid == self.id
-        )  # type: ignore
+        await self._state.ws.send_gc_message(cstrike.MatchListRequestRecentUserGames(accountid=self.id))
+        msg = await self._state.gc_wait_for(
+            cstrike.MatchList, check=lambda msg : isinstance(msg, cstrike.MatchList) and  msg.accountid == self.id
+        )
 
         return Matches(
-            [MatchInfo(match, self._state) for match in msg.body.matches], msg.body.streams, msg.body.tournamentinfo
+            [MatchInfo(match, self._state) for match in msg.matches], msg.streams, msg.tournamentinfo
         )
 
 

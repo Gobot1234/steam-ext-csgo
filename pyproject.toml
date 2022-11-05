@@ -24,8 +24,8 @@ packages = [
 "Bug Tracker" = "https://github.com/Gobot1234/steam-ext-csgo/issues"
 
 [tool.poetry.dependencies]
-python = "^3.7"
-steamio = "^0.9"
+python = "^3.10"
+steamio = {git="https://github.com/Gobot1234/steam.py", rev="main"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.3"
@@ -59,6 +59,31 @@ ensure_newline_before_comments = true
 
 [tool.pyright]
 typeCheckingMode = "basic"
+pythonVersion = "3.10"
+useLibraryCodeForTypes = true
+exclude = ["tests", "steam/ext/commands"]
+reportSelfClsParameterName = "none"
+reportUntypedFunctionDecorator = "error"
+reportUntypedClassDecorator = "error"
+reportUntypedNamedTuple = "error"
+reportImplicitStringConcatenation = "error"
+reportOverlappingOverload = "error"
+reportMissingTypeArgument = "error"
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+strictParameterNoneValue = true
+reportMissingImports = "error"
+reportUnusedImport = "error"
+reportFunctionMemberAccess = "warning"
+reportDuplicateImport = "error"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportUnknownParameterType = "error"
+reportUnknownReturnType = "error"
+# reportUnknownArgumentType = "error"
+reportUnknownMemberType = "error"
+reportUnnecessaryComparison = true
+reportUnnecessaryContains = true
 
 [build-system]
 requires = ["poetry-core==1.1.0a7"]  # ["poetry-core>=1.0.0"]

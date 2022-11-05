@@ -7,6 +7,9 @@ from typing import List
 
 import betterproto
 
+from ....protobufs.msg import GCProtobufMessage
+from ..enums import Language
+
 
 class EgcBaseProtoObjectTypes(betterproto.Enum):
     PartyInvite = 1001
@@ -32,8 +35,7 @@ class CgcStorePurchaseInitLineItem(betterproto.Message):
     purchase_type: int = betterproto.uint32_field(4)
 
 
-@dataclass(eq=False, repr=False)
-class StorePurchaseInit(betterproto.Message):
+class StorePurchaseInit(GCProtobufMessage, msg=Language.StorePurchaseInit):
     country: str = betterproto.string_field(1)
     language: int = betterproto.int32_field(2)
     currency: int = betterproto.int32_field(3)
