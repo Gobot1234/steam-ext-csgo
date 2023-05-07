@@ -10,7 +10,8 @@ class BackpackItemConverter(
     commands.Converter[csgo.BackpackItem]
 ):  # custom converter to get `BackpackItem`s from the bot's inventory
     async def convert(self, ctx: commands.Context, argument: str) -> csgo.BackpackItem:
-        backpack: csgo.Backpack = await ctx.bot.user.inventory(steam.CSGO)
+        assert isinstance(ctx.bot, MyBot)
+        backpack = await ctx.bot.user.inventory(steam.CSGO)
         try:
             asset_id = int(argument)
         except ValueError:

@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABCMeta
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from typing_extensions import Literal, Self
+from typing_extensions import Literal, Self, TypeVar
 
 from ... import utils
-from ...trade import BaseInventory, Item
+from ...abc import BaseUser, PartialUser
+from ...trade import Inventory, Item
+from ...types.id import AssetID
 from .enums import (
     ItemCustomizationNotification as ItemCustomizationNotificationEnum,
     ItemFlags,
@@ -22,6 +24,7 @@ from .enums import (
 from .protobufs import base, econ, struct_messages
 
 if TYPE_CHECKING:
+    from .client import ClientUser
     from .state import GCState
 
 __all__ = (
@@ -37,30 +40,20 @@ __all__ = (
 )
 
 
+@dataclass(slots=True)
 class Sticker:
-    __slots__ = ("slot", "id", "wear", "scale", "rotation", "tint_id")
-
-    def __init__(
-        self,
-        slot: Literal[0, 1, 2, 3, 4],
-        id: int,
-        wear: float | None = None,
-        scale: float | None = None,
-        rotation: float | None = None,
-        tint_id: float | None = None,
-    ):
-        self.slot = slot
-        """The sticker's slot."""
-        self.id = id
-        """The sticker's ID."""
-        self.wear = wear
-        """The sticker's wear."""
-        self.scale = scale
-        """The sticker's scale."""
-        self.rotation = rotation
-        """The sticker's rotation."""
-        self.tint_id = tint_id
-        """The sticker's tint_id."""
+    slot: Literal[0, 1, 2, 3, 4]
+    """The sticker's slot."""
+    id: int
+    """The sticker's ID."""
+    wear: float | None = None
+    """The sticker's wear."""
+    rotation: float | None = None
+    """The sticker's rotation."""
+    scale: float | None = None
+    """The sticker's scale."""
+    tint_id: float | None = None
+    """The sticker's tint_id."""
 
     _decodeable_attrs = (
         "wear",
@@ -69,21 +62,16 @@ class Sticker:
     )
 
 
+@dataclass(slots=True)
 class Paint:
     """Represents the pain on an item."""
 
-    def __init__(
-        self,
-        index: float = 0.0,
-        seed: float = 0.0,
-        wear: float = 0.0,
-    ) -> None:
-        self.index = index
-        """The paint's index."""
-        self.seed = seed
-        """The paint's seed."""
-        self.wear = wear
-        """The paint's wear."""
+    index: float = 0.0
+    """The paint's index."""
+    seed: float = 0.0
+    """The paint's seed."""
+    wear: float = 0.0
+    """The paint's wear."""
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} index={self.index} seed={self.seed} wear={self.wear}>"
@@ -97,8 +85,10 @@ class BaseItem(metaclass=ABCMeta):
         "paint",
         "tradable_after",
         "stickers",
+        "_state",
     ) + tuple(base.Item.__annotations__)
 
+    _state: GCState
     position: int
     """The item's position."""
     paint: Paint
@@ -107,7 +97,7 @@ class BaseItem(metaclass=ABCMeta):
     """The time the item's tradeable after."""
     stickers: list[Sticker]
     """The item's stickers."""
-    id: int
+    id: AssetID
     """The item's asset ID."""
     account_id: int
     """The item's owner's 32-bit account ID."""
@@ -151,12 +141,18 @@ class BaseItem(metaclass=ABCMeta):
 class CasketItem(BaseItem):
     """Represents an item in a :class:`Casket`."""
 
-    __slots__ = ("casket_id",)
-    casket_id: int
-    """The asset ID of the casket this item is from."""
+    __slots__ = ("_casket_id",)
+    _casket_id: AssetID
+
+    @property
+    def casket(self) -> Casket:
+        """The casket this item is from."""
+        casket = utils.get(self._state.backpack, id=self._casket_id)
+        assert isinstance(casket, Casket)
+        return casket
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} id={self.id} casket_id={self.casket_id}>"
+        return f"<{self.__class__.__name__} id={self.id} casket={self.casket}>"
 
 
 @dataclass(repr=False)
@@ -216,32 +212,32 @@ class BaseInspectedItem(metaclass=ABCMeta):
         return f"<{self.__class__.__name__} id={self.id}>"
 
 
+OwnerT = TypeVar("OwnerT", bound="PartialUser", default="BaseUser", covariant=True)
+
 if TYPE_CHECKING:  # avoid mro issues but keep types
 
-    class InspectedItem(Item, BaseInspectedItem):
+    class InspectedItem(Item[OwnerT], BaseInspectedItem):
         __slots__ = ()
 
-    class BaseBackpackItem(Item, BaseItem):
+    class BaseBackpackItem(Item[OwnerT], BaseItem):
         __slots__ = ()
-
-
-# elif DOCS_BUILDING:  # needed to keep docstrings
-
-#     InspectedItem = type("InspectedItem", (Item,), BaseInspectedItem.__dict__ | {"__slots__": ("__dict__",)})
-#     BaseBackpackItem = type("BaseBackpackItem", (Item,), BaseItem.__dict__ | {"__slots__": ("__dict__",)})
 
 else:
 
     @BaseInspectedItem.register
-    class InspectedItem(Item):
+    class InspectedItem(Item[OwnerT]):
         __slots__ = BaseInspectedItem.__slots__
 
     @BaseItem.register
-    class BaseBackpackItem(Item):
+    class BaseBackpackItem(Item[OwnerT]):
         __slots__ = BaseItem.__slots__
 
 
-def has_to_be_in_our_inventory(func):
+F = TypeVar("F", bound=Callable[..., object])
+
+
+def has_to_be_in_our_inventory(func: F) -> F:
+    assert func.__doc__ is not None
     func.__doc__ += """
 
     Note
@@ -251,7 +247,7 @@ def has_to_be_in_our_inventory(func):
     return func
 
 
-class BackpackItem(BaseBackpackItem):
+class BackpackItem(BaseBackpackItem[OwnerT]):
     """A class to represent an item which can interact with the GC."""
 
     __slots__ = ()
@@ -262,9 +258,9 @@ class BackpackItem(BaseBackpackItem):
     @classmethod
     def from_item(cls, item: Item) -> Self:
         """A "type safe" way to cast ``item`` to a :class:`BackpackItem`."""
-        return utils.update_class(item, cls())  # type: ignore
+        return utils.update_class(item, cls.__new__(cls))
 
-    async def rename_to(self, name: str, tag: BackpackItem) -> None:
+    async def rename_to(self: BackpackItem[ClientUser], name: str, tag: BackpackItem[ClientUser]) -> None:
         """Rename this item to ``name`` with ``tag``.
 
         Parameters
@@ -282,11 +278,13 @@ class BackpackItem(BaseBackpackItem):
                 and msg.item_id[0] == self.id
             ),
         )
-        await self._state.ws.send_gc_message(struct_messages.NameItemRequest(name_tag_id=tag.id, item_id=self.id, name=name))
+        await self._state.ws.send_gc_message(
+            struct_messages.NameItemRequest(name_tag_id=tag.id, item_id=self.id, name=name)
+        )
         await future
 
     @has_to_be_in_our_inventory
-    async def delete(self) -> None:
+    async def delete(self: BackpackItem[ClientUser]) -> None:
         """Delete this item."""
         await self._state.ws.send_gc_message(struct_messages.DeleteItemRequest(item_id=self.id))
 
@@ -315,10 +313,10 @@ class BackpackItem(BaseBackpackItem):
         if inspect_url is None:
             raise ValueError("Cannot inspect this item")
         basic = await self._state.client.inspect_item(url=inspect_url)
-        return utils.update_class(self, basic)  # type: ignore
+        return utils.update_class(self, basic)
 
 
-class Casket(BackpackItem):
+class Casket(BackpackItem["ClientUser"]):
     """Represents a casket/storage container."""
 
     __slots__ = ("contained_item_count",)
@@ -338,16 +336,14 @@ class Casket(BackpackItem):
         future = self._state.gc_wait_for(
             econ.ItemCustomizationNotification,
             check=lambda msg: (
-                isinstance(msg, econ.ItemCustomizationNotification)
-                and msg.request == ItemCustomizationNotificationEnum.CasketAdded
-                and msg.item_id[0] == self.id
+                msg.request == ItemCustomizationNotificationEnum.CasketAdded and msg.item_id[0] == self.id
             ),
         )
         await self._state.ws.send_gc_message(econ.CasketItemAdd(casket_item_id=self.id, item_item_id=item.id))
         await future
         self.contained_item_count += 1
 
-    async def remove(self, item: CasketItem) -> BackpackItem:
+    async def remove(self, item: CasketItem) -> BackpackItem[ClientUser]:
         """Remove an item from this casket.
 
         Parameters
@@ -359,64 +355,42 @@ class Casket(BackpackItem):
         -------
         The item as a :class:`BackpackItem` in your inventory.
         """
-        if item.casket_id != self.id:
+        if item._casket_id != self.id:
             raise ValueError("item is not in this casket")
 
         future = self._state.gc_wait_for(
             econ.ItemCustomizationNotification,
             check=lambda msg: (
-                isinstance(msg, econ.ItemCustomizationNotification)
-            and msg.request == ItemCustomizationNotificationEnum.CasketRemoved
-            and msg.item_id[0] == self.id),
+                msg.request == ItemCustomizationNotificationEnum.CasketRemoved and msg.item_id[0] == self.id
+            ),
         )
-        await self._state.ws.send_gc_message(
-            econ.CasketItemExtract(casket_item_id=self.id, item_item_id=item.id)
-        )
+        await self._state.ws.send_gc_message(econ.CasketItemExtract(casket_item_id=self.id, item_item_id=item.id))
         await future
         self.contained_item_count -= 1
 
-        backpack_item = utils.get(self._state.backpack, id=item.id)
-        while backpack_item is None:
-            backpack_item = utils.get(self._state.backpack, id=item.id)
-            await asyncio.sleep(0)
-
-        return backpack_item
+        return cast("BackpackItem[ClientUser]", await self._state.wait_for_item(item.id))
 
     async def contents(self) -> list[CasketItem]:
         """This casket's contents"""
         if not self.contained_item_count:
             return []
 
-        contained_items = [item for item in self._state.casket_items.values() if item.casket_id == self.id]
+        contained_items = [item for item in self._state.casket_items.values() if item._casket_id == self.id]
         if len(contained_items) == self.contained_item_count:
             return contained_items
 
         future = self._state.gc_wait_for(
             econ.ItemCustomizationNotification,
             check=lambda msg: (
-                isinstance(msg, econ.ItemCustomizationNotification) and msg.request == ItemCustomizationNotificationEnum.CasketContents and msg.item_id[0] == self.id
+                msg.request == ItemCustomizationNotificationEnum.CasketContents and msg.item_id[0] == self.id
             ),
         )
-        await self._state.ws.send_gc_message(
-            econ.CasketItemLoadContents(casket_item_id=self.id, item_item_id=self.id)
-        )
+        await self._state.ws.send_gc_message(econ.CasketItemLoadContents(casket_item_id=self.id, item_item_id=self.id))
 
         notification = await future
+        return await asyncio.gather(*map(self._state.wait_for_casket_item, notification.item_id[1:]))
 
-        items = []
-        for casket_item_id in notification.body.item_id[1:]:
-            while True:
-                try:
-                    casket_item = self._state.casket_items[casket_item_id]
-                except KeyError:
-                    await asyncio.sleep(0)
-                else:
-                    items.append(casket_item)
-                    break
-
-        return items
-
-    async def rename_to(self, name: str) -> None:
+    async def rename_to(self, name: str) -> None:  # type: ignore
         """Rename this casket to ``name``.
 
         Parameters
@@ -430,20 +404,18 @@ class Casket(BackpackItem):
         it.
         """
         # TODO consider this might need a lock to make sure that we can actually update the correct item
-        item = _FakeNameTag()
-        item.owner = self._state.client.user
-        await super().rename_to(name, item)
+        await super().rename_to(name, _FakeNameTag())
 
 
-class _FakeNameTag(BackpackItem):
-    id = 0
+class _FakeNameTag(BackpackItem["ClientUser"]):
+    id = AssetID(0)
     __slots__ = ()
 
-    def __init__(self, *_, **__):
+    def __init__(self, *_: object, **__: object):
         pass
 
 
-class Backpack(BaseInventory[BackpackItem]):
+class Backpack(Inventory[BackpackItem["ClientUser"], "ClientUser"]):
     """A class to represent the client's backpack."""
 
     @property

@@ -3,7 +3,6 @@
 # plugin: python-betterproto
 
 from dataclasses import dataclass
-from typing import List
 
 import betterproto
 
@@ -39,7 +38,7 @@ class CQuestPublisherAddCommunityItemsToPlayerRequest(betterproto.Message):
     match_item_type: int = betterproto.uint32_field(3)
     match_item_class: int = betterproto.uint32_field(4)
     prefix_item_name: str = betterproto.string_field(5)
-    attributes: List["CQuestPublisherAddCommunityItemsToPlayerRequestAttribute"] = betterproto.message_field(6)
+    attributes: "list[CQuestPublisherAddCommunityItemsToPlayerRequestAttribute]" = betterproto.message_field(6)
     note: str = betterproto.string_field(7)
 
 
@@ -69,7 +68,7 @@ class CCommunityGetGamePersonalDataCategoriesRequest(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class CCommunityGetGamePersonalDataCategoriesResponse(betterproto.Message):
-    categories: List["CCommunityGamePersonalDataCategoryInfo"] = betterproto.message_field(1)
+    categories: "list[CCommunityGamePersonalDataCategoryInfo]" = betterproto.message_field(1)
     app_assets_basename: str = betterproto.string_field(2)
 
 
@@ -84,7 +83,7 @@ class CCommunityGetGamePersonalDataEntriesRequest(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class CCommunityGetGamePersonalDataEntriesResponse(betterproto.Message):
     gceresult: int = betterproto.uint32_field(1)
-    entries: List[str] = betterproto.string_field(2)
+    entries: list[str] = betterproto.string_field(2)
     continue_token: str = betterproto.string_field(3)
 
 

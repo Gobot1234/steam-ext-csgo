@@ -90,7 +90,7 @@ class ItemOrigin(IntEnum):
     Max                       = 25
 
 
-class Language(IntEnum):
+class EMsg(IntEnum):
     # ESOMsg
     SOCreate                               = 21
     SOUpdate                               = 22

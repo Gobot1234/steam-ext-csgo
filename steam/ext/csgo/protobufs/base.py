@@ -3,12 +3,11 @@
 # plugin: python-betterproto
 
 from dataclasses import dataclass
-from typing import List
 
 import betterproto
 
 from ....protobufs.msg import GCProtobufMessage
-from ..enums import Language
+from ..enums import EMsg
 
 
 class EgcBaseProtoObjectTypes(betterproto.Enum):
@@ -35,11 +34,11 @@ class CgcStorePurchaseInitLineItem(betterproto.Message):
     purchase_type: int = betterproto.uint32_field(4)
 
 
-class StorePurchaseInit(GCProtobufMessage, msg=Language.StorePurchaseInit):
+class StorePurchaseInit(GCProtobufMessage, msg=EMsg.StorePurchaseInit):
     country: str = betterproto.string_field(1)
     language: int = betterproto.int32_field(2)
     currency: int = betterproto.int32_field(3)
-    line_items: List["CgcStorePurchaseInitLineItem"] = betterproto.message_field(4)
+    line_items: "list[CgcStorePurchaseInitLineItem]" = betterproto.message_field(4)
 
 
 @dataclass(eq=False, repr=False)
@@ -47,7 +46,7 @@ class StorePurchaseInitResponse(betterproto.Message):
     result: int = betterproto.int32_field(1)
     txn_id: int = betterproto.uint64_field(2)
     url: str = betterproto.string_field(3)
-    item_ids: List[int] = betterproto.uint64_field(4)
+    item_ids: list[int] = betterproto.uint64_field(4)
 
 
 @dataclass(eq=False, repr=False)
@@ -137,7 +136,7 @@ class Criteria(betterproto.Message):
     initial_inventory: int = betterproto.uint32_field(5)
     initial_quantity: int = betterproto.uint32_field(6)
     ignore_enabled_flag: bool = betterproto.bool_field(8)
-    conditions: List["CriteriaCondition"] = betterproto.message_field(9)
+    conditions: "list[CriteriaCondition]" = betterproto.message_field(9)
     item_rarity: int = betterproto.int32_field(10)
     item_rarity_set: bool = betterproto.bool_field(11)
     recent_only: bool = betterproto.bool_field(12)
@@ -161,9 +160,9 @@ class Recipe(betterproto.Message):
     class_usage_for_output: int = betterproto.int32_field(14)
     slot_usage_for_output: int = betterproto.int32_field(15)
     set_for_output: int = betterproto.int32_field(16)
-    input_items_criteria: List["Criteria"] = betterproto.message_field(20)
-    output_items_criteria: List["Criteria"] = betterproto.message_field(21)
-    input_item_dupe_counts: List[int] = betterproto.uint32_field(22)
+    input_items_criteria: "list[Criteria]" = betterproto.message_field(20)
+    output_items_criteria: "list[Criteria]" = betterproto.message_field(21)
+    input_item_dupe_counts: list[int] = betterproto.uint32_field(22)
 
 
 @dataclass(eq=False, repr=False)
@@ -248,12 +247,12 @@ class Item(betterproto.Message):
     origin: int = betterproto.uint32_field(9)
     custom_name: str = betterproto.string_field(10)
     custom_description: str = betterproto.string_field(11)
-    attribute: List["ItemAttribute"] = betterproto.message_field(12)
+    attribute: "list[ItemAttribute]" = betterproto.message_field(12)
     interior_item: "Item" = betterproto.message_field(13)
     in_use: bool = betterproto.bool_field(14)
     style: int = betterproto.uint32_field(15)
     original_id: int = betterproto.uint64_field(16)
-    equipped_state: List["ItemEquipped"] = betterproto.message_field(18)
+    equipped_state: "list[ItemEquipped]" = betterproto.message_field(18)
     rarity: int = betterproto.uint32_field(19)
 
 
@@ -267,9 +266,9 @@ class AdjustItemEquippedState(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class AdjustItemEquippedStateMulti(betterproto.Message):
-    t_equips: List[int] = betterproto.uint64_field(1)
-    ct_equips: List[int] = betterproto.uint64_field(2)
-    noteam_equips: List[int] = betterproto.uint64_field(3)
+    t_equips: list[int] = betterproto.uint64_field(1)
+    ct_equips: list[int] = betterproto.uint64_field(2)
+    noteam_equips: list[int] = betterproto.uint64_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -326,14 +325,14 @@ class ConVarValue(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class ReplicateConVars(betterproto.Message):
-    convars: List["ConVarValue"] = betterproto.message_field(1)
+    convars: "list[ConVarValue]" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
 class UseItem(betterproto.Message):
     item_id: int = betterproto.uint64_field(1)
     target_steam_id: int = betterproto.fixed64_field(2)
-    gift_potential_targets: List[int] = betterproto.uint32_field(3)
+    gift_potential_targets: list[int] = betterproto.uint32_field(3)
     duel_class_lock: int = betterproto.uint32_field(4)
     initiator_steam_id: int = betterproto.fixed64_field(5)
 
@@ -363,7 +362,7 @@ class ItemAcknowledgedDeprecated(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class SetItemPositions(betterproto.Message):
-    item_positions: List["SetItemPositionsItemPosition"] = betterproto.message_field(1)
+    item_positions: "list[SetItemPositionsItemPosition]" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -402,8 +401,8 @@ class NameItemNotification(betterproto.Message):
 class ClientDisplayNotification(betterproto.Message):
     notification_title_localization_key: str = betterproto.string_field(1)
     notification_body_localization_key: str = betterproto.string_field(2)
-    body_substring_keys: List[str] = betterproto.string_field(3)
-    body_substring_values: List[str] = betterproto.string_field(4)
+    body_substring_keys: list[str] = betterproto.string_field(3)
+    body_substring_values: list[str] = betterproto.string_field(4)
 
 
 @dataclass(eq=False, repr=False)
@@ -467,7 +466,7 @@ class StorePurchaseFinalize(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class StorePurchaseFinalizeResponse(betterproto.Message):
     result: int = betterproto.uint32_field(1)
-    item_ids: List[int] = betterproto.uint64_field(2)
+    item_ids: list[int] = betterproto.uint64_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -499,7 +498,7 @@ class BannedWord(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class BannedWordListResponse(betterproto.Message):
     ban_list_group_id: int = betterproto.uint32_field(1)
-    word_list: List["BannedWord"] = betterproto.message_field(2)
+    word_list: "list[BannedWord]" = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -529,7 +528,7 @@ class ToGcDirtySdoCache(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class ToGcDirtyMultipleSdoCache(betterproto.Message):
     sdo_type: int = betterproto.uint32_field(1)
-    key_uint64: List[int] = betterproto.uint64_field(2)
+    key_uint64: list[int] = betterproto.uint64_field(2)
 
 
 @dataclass(eq=False, repr=False)

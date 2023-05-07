@@ -1,9 +1,9 @@
 from ....protobufs.msg import GCMessage
 from ....utils import StructIO
-from ..enums import Language
+from ..enums import EMsg
 
 
-class NameItemRequest(GCMessage, msg=Language.NameItem):
+class NameItemRequest(GCMessage, msg=EMsg.NameItem):
     name_tag_id: int
     item_id: int
     name: str
@@ -16,5 +16,5 @@ class NameItemRequest(GCMessage, msg=Language.NameItem):
             return io.buffer
 
 
-class DeleteItemRequest(GCMessage, msg=Language.Delete):
+class DeleteItemRequest(GCMessage, msg=EMsg.Delete):
     item_id: int

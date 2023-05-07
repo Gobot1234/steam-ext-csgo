@@ -4,31 +4,28 @@ from __future__ import annotations
 
 import re
 import struct
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Final, overload
 
-from typing_extensions import Final, Literal
+from typing_extensions import Self
 
-from ... import utils
-from ...abc import Message
+from ..._const import timeout
+from ..._gc import Client as Client_
 from ...app import CSGO
+from ...enums import Type
 from ...ext import commands
-from ...gateway import GCMsgsT, Msgs
 from ...id import ID
-from ...invite import ClanInvite, UserInvite
-from ...trade import TradeOffer
-from .._gc import Client as Client_
-from .backpack import BackpackItem, Paint, Sticker
+from ...types.id import Intable
+from ...utils import cached_property
+from .backpack import Paint, Sticker
 from .enums import ItemOrigin, ItemQuality
-from .models import ClientUser, User
+from .models import ClientUser, MatchInfo, User
 from .protobufs import cstrike
 from .state import GCState
 
 if TYPE_CHECKING:
-    from ...comment import Comment
     from ...ext import csgo
+    from ...types.user import IndividualID
     from .backpack import BaseInspectedItem
-    from .protobufs.sdk import ClientHello
 
 
 __all__ = (
@@ -45,20 +42,14 @@ class Client(Client_):
     do with :class:`Client`.
     """
 
-    _APP: Final = CSGO
+    _APP: Final = CSGO  # type: ignore
     _ClientUserCls = ClientUser
-    user: ClientUser
-    _connection: GCState
+    user: cached_property[Self, ClientUser]
+    _state: GCState
     _GC_HEART_BEAT = 10.0
 
-    def _get_state(self, **options: Any) -> GCState:
-        return GCState(client=self, **options)
-
-    def _get_gc_message(self) -> ClientHello:
-        return ClientHello()
-
     @overload
-    async def inspect_item(self, *, owner: ID, asset_id: int, d: int) -> BaseInspectedItem:
+    async def inspect_item(self, *, owner: IndividualID, asset_id: int, d: int) -> BaseInspectedItem:
         ...
 
     @overload
@@ -72,7 +63,7 @@ class Client(Client_):
     async def inspect_item(
         self,
         *,
-        owner: ID | None = None,
+        owner: IndividualID | None = None,
         asset_id: int = 0,
         d: int = 0,
         market_id: int = 0,
@@ -99,7 +90,7 @@ class Client(Client_):
             if search is None:
                 raise ValueError("Inspect url is invalid")
 
-            owner = ID(int(search[1]) if search[0].startswith("S") else 0)
+            owner = ID(int(search[1]) if search[0].startswith("S") else 0, type=Type.Individual)
             market_id = int(search[1]) if search[0].startswith("M") else 0
             asset_id = int(search[2])
             d = int(search[3])
@@ -109,7 +100,7 @@ class Client(Client_):
         elif d == 0 or asset_id == 0:
             raise TypeError(f"Missing required keyword-only argument: {'asset_id' if d else 'd'}")
 
-        future = self._connection.gc_wait_for(
+        future = self.ws.gc_wait_for(
             cstrike.Client2GcEconPreviewDataBlockResponse,
             check=lambda msg: isinstance(msg, cstrike.Client2GcEconPreviewDataBlockResponse)
             and msg.iteminfo.itemid == asset_id,
@@ -125,7 +116,7 @@ class Client(Client_):
 
         msg = await future
 
-        item = msg.body.iteminfo
+        item = msg.iteminfo
         # decode the wear
         packed_wear = struct.pack(">l", item.paintwear)
         (paint_wear,) = struct.unpack(">f", packed_wear)
@@ -157,12 +148,21 @@ class Client(Client_):
             ent_index=item.entindex,
         )
 
+    async def fetch_match(self, id: int, *, outcome_id: int, token: int) -> MatchInfo:
+        """Fetch a match by its id."""
+        future = self.ws.gc_wait_for(
+            cstrike.MatchInfo, check=lambda msg: isinstance(msg, cstrike.MatchList) and msg.matchid == id
+        )
+        await self.ws.send_gc_message(cstrike.MatchListRequestFullGameInfo(id, outcome_id, token))
+        async with timeout(30):
+            return MatchInfo(self._state, await future)
+
     if TYPE_CHECKING:
 
-        def get_user(self, id: utils.Intable) -> User | None:
+        def get_user(self, id: Intable) -> User | None:
             ...
 
-        async def fetch_user(self, id: utils.Intable) -> User | None:
+        async def fetch_user(self, id: Intable) -> User:
             ...
 
         async def on_gc_connect(self) -> None:
@@ -198,7 +198,7 @@ class Client(Client_):
 
             Parameters
             ----------
-            item: :class:`.BackpackItem`
+            item
                 The received item.
             """
 
@@ -207,7 +207,7 @@ class Client(Client_):
 
             Parameters
             ----------
-            item: :class:`.BackpackItem`
+            item
                 The removed item.
             """
 
@@ -216,158 +216,11 @@ class Client(Client_):
 
             Parameters
             ----------
-            before: :class:`.BackpackItem`
+            before
                 The item before being updated.
-            after: :class:`.BackpackItem`
+            after
                 The item now.
             """
-
-        @overload
-        async def wait_for(  # type: ignore
-            self,
-            event: Literal[
-                "connect",
-                "disconnect",
-                "ready",
-                "login",
-                "logout",
-                "gc_connect",
-                "gc_disconnect",
-                "gc_ready",
-            ],
-            *,
-            check: "() -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> None:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["error"],
-            *,
-            check: "(str, Exception, tuple[Any, ...], dict[str, Any]) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> tuple[str, Exception, tuple[Any, ...], dict[str, Any]]:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["message"],
-            *,
-            check: "(Message) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> Message:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["comment"],
-            *,
-            check: "(Comment) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> Comment:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["user_update"],
-            *,
-            check: "(User, User) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> tuple[User, User]:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["typing"],
-            *,
-            check: "(User, datetime) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> tuple[User, datetime]:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal[
-                "trade_receive",
-                "trade_send",
-                "trade_accept",
-                "trade_decline",
-                "trade_cancel",
-                "trade_expire",
-                "trade_counter",
-            ],
-            *,
-            check: "(TradeOffer)-> bool" = ...,
-            timeout: float | None = ...,
-        ) -> TradeOffer:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["user_invite"],
-            *,
-            check: "(UserInvite) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> UserInvite:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal["clan_invite"],
-            *,
-            check: "(ClanInvite) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> ClanInvite:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal[
-                "socket_receive",
-                "socket_send",
-            ],
-            *,
-            check: "(Msgs) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> Msgs:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal[
-                "gc_message_receive",
-                "gc_message_send",
-            ],
-            *,
-            check: "(GCMsgsT) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> GCMsgsT:
-            ...
-
-        @overload
-        async def wait_for(
-            self,
-            event: Literal[
-                "item_receive",
-                "item_remove",
-                "item_update",
-            ],
-            *,
-            check: "(BackpackItem) -> bool" = ...,
-            timeout: float | None = ...,
-        ) -> BackpackItem:
-            ...
 
 
 class Bot(commands.Bot, Client):

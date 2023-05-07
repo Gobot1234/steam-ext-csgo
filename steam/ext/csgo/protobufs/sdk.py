@@ -3,12 +3,11 @@
 # plugin: python-betterproto
 
 from dataclasses import dataclass
-from typing import List
 
 import betterproto
 
 from ....protobufs.msg import GCProtobufMessage
-from ..enums import Language
+from ..enums import EMsg
 
 
 class GcClientLauncherType(betterproto.Enum):
@@ -31,29 +30,29 @@ class IDOwner(betterproto.Message):
     id: int = betterproto.uint64_field(2)
 
 
-class SOCreate(GCProtobufMessage, msg=Language.SOCreate):
+class SOCreate(GCProtobufMessage, msg=EMsg.SOCreate):
     type_id: int = betterproto.int32_field(2)
     object_data: bytes = betterproto.bytes_field(3)
     version: int = betterproto.fixed64_field(4)
     owner_soid: "IDOwner" = betterproto.message_field(5)
 
 
-class SOUpdate(GCProtobufMessage, msg=Language.SOUpdate):
+class SOUpdate(GCProtobufMessage, msg=EMsg.SOUpdate):
     type_id: int = betterproto.int32_field(2)
     object_data: bytes = betterproto.bytes_field(3)
     version: int = betterproto.fixed64_field(4)
     owner_soid: "IDOwner" = betterproto.message_field(5)
 
 
-class SODestroy(GCProtobufMessage, msg=Language.SODestroy):
+class SODestroy(GCProtobufMessage, msg=EMsg.SODestroy):
     type_id: int = betterproto.int32_field(2)
     object_data: bytes = betterproto.bytes_field(3)
     version: int = betterproto.fixed64_field(4)
     owner_soid: "IDOwner" = betterproto.message_field(5)
 
 
-class MultipleObjects(GCProtobufMessage, msg=Language.SOUpdateMultiple):
-    objects_modified: List["MultipleObjectsSingleObject"] = betterproto.message_field(2)
+class MultipleObjects(GCProtobufMessage, msg=EMsg.SOUpdateMultiple):
+    objects_modified: "list[MultipleObjectsSingleObject]" = betterproto.message_field(2)
     version: int = betterproto.fixed64_field(3)
     owner_soid: "IDOwner" = betterproto.message_field(6)
 
@@ -66,7 +65,7 @@ class MultipleObjectsSingleObject(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class CacheSubscribed(betterproto.Message):
-    objects: List["CacheSubscribedSubscribedType"] = betterproto.message_field(2)
+    objects: "list[CacheSubscribedSubscribedType]" = betterproto.message_field(2)
     version: int = betterproto.fixed64_field(3)
     owner_soid: "IDOwner" = betterproto.message_field(4)
 
@@ -74,7 +73,7 @@ class CacheSubscribed(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class CacheSubscribedSubscribedType(betterproto.Message):
     type_id: int = betterproto.int32_field(1)
-    object_data: List[bytes] = betterproto.bytes_field(2)
+    object_data: list[bytes] = betterproto.bytes_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -124,7 +123,7 @@ class AccountDetails(betterproto.Message):
 class MultiplexMessage(betterproto.Message):
     msgtype: int = betterproto.uint32_field(1)
     payload: bytes = betterproto.bytes_field(2)
-    steamids: List[int] = betterproto.fixed64_field(3)
+    steamids: list[int] = betterproto.fixed64_field(3)
     replytogc: bool = betterproto.bool_field(4)
 
 
@@ -185,9 +184,9 @@ class CacheHaveVersion(betterproto.Message):
     version: int = betterproto.fixed64_field(2)
 
 
-class ClientHello(GCProtobufMessage, msg=Language.ClientHello):
+class ClientHello(GCProtobufMessage, msg=EMsg.ClientHello):
     version: int = betterproto.uint32_field(1)
-    socache_have_versions: List["CacheHaveVersion"] = betterproto.message_field(2)
+    socache_have_versions: "list[CacheHaveVersion]" = betterproto.message_field(2)
     client_session_need: int = betterproto.uint32_field(3)
     client_launcher: int = betterproto.uint32_field(4)
     partner_srcid: int = betterproto.uint32_field(5)
@@ -200,7 +199,7 @@ class ClientHello(GCProtobufMessage, msg=Language.ClientHello):
 @dataclass(eq=False, repr=False)
 class ServerHello(betterproto.Message):
     version: int = betterproto.uint32_field(1)
-    socache_have_versions: List["CacheHaveVersion"] = betterproto.message_field(2)
+    socache_have_versions: "list[CacheHaveVersion]" = betterproto.message_field(2)
     legacy_client_session_need: int = betterproto.uint32_field(3)
     client_launcher: int = betterproto.uint32_field(4)
     legacy_steamdatagram_routing: bytes = betterproto.bytes_field(6)
@@ -208,11 +207,11 @@ class ServerHello(betterproto.Message):
     steamdatagram_login: bytes = betterproto.bytes_field(8)
 
 
-class ClientWelcome(GCProtobufMessage, msg=Language.ClientWelcome):
+class ClientWelcome(GCProtobufMessage, msg=EMsg.ClientWelcome):
     version: int = betterproto.uint32_field(1)
     game_data: bytes = betterproto.bytes_field(2)
-    outofdate_subscribed_caches: List["CacheSubscribed"] = betterproto.message_field(3)
-    uptodate_subscribed_caches: List["CacheSubscriptionCheck"] = betterproto.message_field(4)
+    outofdate_subscribed_caches: "list[CacheSubscribed]" = betterproto.message_field(3)
+    uptodate_subscribed_caches: "list[CacheSubscriptionCheck]" = betterproto.message_field(4)
     location: "ClientWelcomeLocation" = betterproto.message_field(5)
     game_data2: bytes = betterproto.bytes_field(6)
     rtime32_gc_welcome_timestamp: int = betterproto.uint32_field(7)
@@ -229,7 +228,7 @@ class ClientWelcomeLocation(betterproto.Message):
     country: str = betterproto.string_field(3)
 
 
-class ConnectionStatus(GCProtobufMessage, msg=Language.ClientConnectionStatus):
+class ConnectionStatus(GCProtobufMessage, msg=EMsg.ClientConnectionStatus):
     status: "GcConnectionStatus" = betterproto.enum_field(1)
     client_session_need: int = betterproto.uint32_field(2)
     queue_position: int = betterproto.int32_field(3)
@@ -241,7 +240,7 @@ class ConnectionStatus(GCProtobufMessage, msg=Language.ClientConnectionStatus):
 @dataclass(eq=False, repr=False)
 class PopulateItemDescriptionsRequest(betterproto.Message):
     appid: int = betterproto.uint32_field(1)
-    languages: List["PopulateItemDescriptionsRequestItemDescriptionsLanguageBlock"] = betterproto.message_field(2)
+    languages: "list[PopulateItemDescriptionsRequestItemDescriptionsLanguageBlock]" = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -254,7 +253,7 @@ class PopulateItemDescriptionsRequestSingleItemDescription(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class PopulateItemDescriptionsRequestItemDescriptionsLanguageBlock(betterproto.Message):
     language: str = betterproto.string_field(1)
-    descriptions: List["PopulateItemDescriptionsRequestSingleItemDescription"] = betterproto.message_field(2)
+    descriptions: "list[PopulateItemDescriptionsRequestSingleItemDescription]" = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -265,15 +264,15 @@ class GetContributorsRequest(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class GetContributorsResponse(betterproto.Message):
-    contributors: List[int] = betterproto.fixed64_field(1)
+    contributors: list[int] = betterproto.fixed64_field(1)
 
 
 @dataclass(eq=False, repr=False)
 class SetItemPaymentRulesRequest(betterproto.Message):
     appid: int = betterproto.uint32_field(1)
     gameitemid: int = betterproto.uint32_field(2)
-    associated_workshop_files: List["SetItemPaymentRulesRequestWorkshopItemPaymentRule"] = betterproto.message_field(3)
-    partner_accounts: List["SetItemPaymentRulesRequestPartnerItemPaymentRule"] = betterproto.message_field(4)
+    associated_workshop_files: "list[SetItemPaymentRulesRequestWorkshopItemPaymentRule]" = betterproto.message_field(3)
+    partner_accounts: "list[SetItemPaymentRulesRequestPartnerItemPaymentRule]" = betterproto.message_field(4)
     validate_only: bool = betterproto.bool_field(5)
     make_workshop_files_subscribable: bool = betterproto.bool_field(6)
     associated_workshop_file_for_direct_payments: "SetItemPaymentRulesRequestWorkshopDirectPaymentRule" = (
@@ -310,17 +309,17 @@ class SetItemPaymentRulesResponse(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class CGameServersAggregationQueryRequest(betterproto.Message):
     filter: str = betterproto.string_field(1)
-    group_fields: List[str] = betterproto.string_field(3)
+    group_fields: list[str] = betterproto.string_field(3)
 
 
 @dataclass(eq=False, repr=False)
 class CGameServersAggregationQueryResponse(betterproto.Message):
-    groups: List["CGameServersAggregationQueryResponseGroup"] = betterproto.message_field(1)
+    groups: "list[CGameServersAggregationQueryResponseGroup]" = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
 class CGameServersAggregationQueryResponseGroup(betterproto.Message):
-    group_values: List[str] = betterproto.string_field(1)
+    group_values: list[str] = betterproto.string_field(1)
     servers_empty: int = betterproto.uint32_field(2)
     servers_full: int = betterproto.uint32_field(3)
     servers_total: int = betterproto.uint32_field(4)
@@ -346,7 +345,7 @@ class AddSpecialPaymentResponse(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class SetRichPresenceLocalizationRequest(betterproto.Message):
     appid: int = betterproto.uint32_field(1)
-    languages: List["SetRichPresenceLocalizationRequestLanguageSection"] = betterproto.message_field(2)
+    languages: "list[SetRichPresenceLocalizationRequestLanguageSection]" = betterproto.message_field(2)
     steamid: int = betterproto.uint64_field(3)
 
 
@@ -359,7 +358,7 @@ class SetRichPresenceLocalizationRequestToken(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class SetRichPresenceLocalizationRequestLanguageSection(betterproto.Message):
     language: str = betterproto.string_field(1)
-    tokens: List["SetRichPresenceLocalizationRequestToken"] = betterproto.message_field(2)
+    tokens: "list[SetRichPresenceLocalizationRequestToken]" = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)

@@ -3,12 +3,11 @@
 # plugin: python-betterproto
 
 from dataclasses import dataclass
-from typing import List
 
 import betterproto
 
 from ....protobufs.msg import GCProtobufMessage
-from ..enums import Language
+from ..enums import EMsg
 
 
 @dataclass(eq=False, repr=False)
@@ -17,7 +16,7 @@ class GiftedItems(betterproto.Message):
     giftdefindex: int = betterproto.uint32_field(2)
     max_gifts_possible: int = betterproto.uint32_field(3)
     num_eligible_recipients: int = betterproto.uint32_field(4)
-    recipients_accountids: List[int] = betterproto.uint32_field(5)
+    recipients_accountids: list[int] = betterproto.uint32_field(5)
 
 
 @dataclass(eq=False, repr=False)
@@ -26,17 +25,17 @@ class ApplyAutograph(betterproto.Message):
     item_item_id: int = betterproto.uint64_field(2)
 
 
-class CasketItemAdd(GCProtobufMessage, msg=Language.CasketItemAdd):
+class CasketItemAdd(GCProtobufMessage, msg=EMsg.CasketItemAdd):
     casket_item_id: int = betterproto.uint64_field(1)
     item_item_id: int = betterproto.uint64_field(2)
 
 
-class CasketItemExtract(GCProtobufMessage, msg=Language.CasketItemExtract):
+class CasketItemExtract(GCProtobufMessage, msg=EMsg.CasketItemExtract):
     casket_item_id: int = betterproto.uint64_field(1)
     item_item_id: int = betterproto.uint64_field(2)
 
 
-class CasketItemLoadContents(GCProtobufMessage, msg=Language.CasketItemLoadContents):
+class CasketItemLoadContents(GCProtobufMessage, msg=EMsg.CasketItemLoadContents):
     casket_item_id: int = betterproto.uint64_field(1)
     item_item_id: int = betterproto.uint64_field(2)
 
@@ -46,6 +45,6 @@ class UserTrackTimePlayedConsecutively(betterproto.Message):
     state: int = betterproto.uint32_field(1)
 
 
-class ItemCustomizationNotification(GCProtobufMessage, msg=Language.ItemCustomizationNotification):
-    item_id: List[int] = betterproto.uint64_field(1)
+class ItemCustomizationNotification(GCProtobufMessage, msg=EMsg.ItemCustomizationNotification):
+    item_id: list[int] = betterproto.uint64_field(1)
     request: int = betterproto.uint32_field(2)

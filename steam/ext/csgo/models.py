@@ -4,31 +4,30 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import datetime
 from ipaddress import IPv4Address
 from typing import TYPE_CHECKING, Generic, TypeVar, overload
 
 from typing_extensions import Literal, Self
 
 from ... import abc, user
+from ..._gc.client import ClientUser as ClientUser_
 from ...app import CSGO, App
 from ...game_server import GameServer
-from ...trade import Inventory
-from .._gc.client import ClientUser as ClientUser_
+from ...utils import DateTime
 from ..commands.converters import Converter, UserConverter
-from .enums import Language
+from .protobufs import cstrike
 
 if TYPE_CHECKING:
     from ...enums import Language
+    from ...trade import Inventory, Item
     from .backpack import Backpack
-    from .protobufs import cstrike
     from .state import GCState
 
 
-UserT = TypeVar("UserT", bound=abc.BaseUser)
+UserT = TypeVar("UserT", bound=abc.PartialUser)
 
 __all__ = (
-    "BaseUser",
+    "PartialUser",
     "User",
     "ClientUser",
     "ProfileInfo",
@@ -36,10 +35,10 @@ __all__ = (
 
 
 class MatchInfo:
-    def __init__(self, match_info: cstrike.MatchInfo, state: GCState) -> None:
+    def __init__(self, state: GCState, match_info: cstrike.MatchInfo) -> None:
         self._state = state
         self.id = match_info.matchid
-        self.created_at = datetime.utcfromtimestamp(match_info.matchtime)
+        self.created_at = DateTime.from_timestamp(match_info.matchtime)
         self.server_ip = IPv4Address(match_info.watchablematchinfo.server_ip)
         # TODO consider adding these
         # tv_port: int = betterproto.uint32_field(2)
@@ -68,7 +67,7 @@ class Matches:
     tournament_info: "cstrike.TournamentInfo"
 
 
-class BaseUser(abc.BaseUser):
+class PartialUser(abc.PartialUser):
     __slots__ = ()
     _state: GCState
 
@@ -79,31 +78,29 @@ class BaseUser(abc.BaseUser):
         return ProfileInfo(self, msg.account_profiles[0])
 
 
-class User(BaseUser, user.User):
+class User(PartialUser, user.User):
     __slots__ = ()
 
     async def recent_matches(self) -> Matches:
         await self._state.ws.send_gc_message(cstrike.MatchListRequestRecentUserGames(accountid=self.id))
-        msg = await self._state.gc_wait_for(
-            cstrike.MatchList, check=lambda msg : isinstance(msg, cstrike.MatchList) and  msg.accountid == self.id
+        msg = await self._state.ws.gc_wait_for(
+            cstrike.MatchList, check=lambda msg: isinstance(msg, cstrike.MatchList) and msg.accountid == self.id
         )
 
-        return Matches(
-            [MatchInfo(match, self._state) for match in msg.matches], msg.streams, msg.tournamentinfo
-        )
+        return Matches([MatchInfo(self._state, match) for match in msg.matches], msg.streams, msg.tournamentinfo)
 
 
-class ClientUser(BaseUser, ClientUser_):
+class ClientUser(PartialUser, ClientUser_):
     __slots__ = ("_profile_info_msg",)
 
     if TYPE_CHECKING:
 
         @overload
-        async def inventory(self, app: Literal[CSGO], *, language: Language | None = None) -> Backpack:  # type: ignore
+        async def inventory(self, app: Literal[CSGO], *, language: object = ...) -> Backpack:  # type: ignore
             ...
 
         @overload
-        async def inventory(self, app: App, *, language: Language | None = None) -> Inventory:  # type: ignore
+        async def inventory(self, app: App, *, language: Language | None = None) -> Inventory[Item[Self], Self]:
             ...
 
     async def csgo_profile(self) -> ProfileInfo[Self]:
@@ -114,7 +111,7 @@ class ClientUser(BaseUser, ClientUser_):
 
 
 class ProfileInfo(Generic[UserT]):
-    def __init__(self, user: UserT, proto: cstrike.MatchmakingClientHello):
+    def __init__(self, user: UserT, proto: cstrike.MatchmakingClientHello | cstrike.PlayersProfileProfile):
         self.user = user
         self.in_match = proto.ongoingmatch
         self.global_stats = proto.global_stats
@@ -145,4 +142,4 @@ class ProfileInfo(Generic[UserT]):
 
 
 class CSGOUserConverter(Converter[User]):
-    convert = UserConverter.convert
+    convert = UserConverter.convert  # type: ignore
